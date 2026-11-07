@@ -48,6 +48,23 @@ Die Startseite leitet auf `/kalender` um.
 | `/mitarbeiter` | Mitarbeiter |
 | `/leistungen` | Leistungen |
 | `/einstellungen` | Einstellungen |
+| `/spike/kalender` | M03 Kalender A/B Spike |
+| `/spike/kalender/daypilot` | DayPilot Lite |
+| `/spike/kalender/rbc` | React Big Calendar |
+| `/spike/kalender/native` | Native Dense Baseline |
+
+## Datenbank (M04+)
+
+Schema: `src/db/schema`. Forward SQL: `src/db/migrations/0000_m04_foundation.sql`.
+
+```bash
+# Requires a local PostgreSQL and DATABASE_URL
+psql "$DATABASE_URL" -f src/db/migrations/0000_m04_foundation.sql
+# Rollback (destructive):
+psql "$DATABASE_URL" -f src/db/migrations/0000_m04_foundation_down.sql
+```
+
+UI milestones do not require Postgres until booking APIs land.
 
 ## Qualitätssicherung
 

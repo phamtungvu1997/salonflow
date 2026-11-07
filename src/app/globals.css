@@ -1,54 +1,10 @@
+@import "../styles/tokens.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    /* Soft operational studio palette — original, not Salonized assets */
-    --background: #f4f6f8;
-    --foreground: #1c2430;
-    --card: #ffffff;
-    --card-foreground: #1c2430;
-    --popover: #ffffff;
-    --popover-foreground: #1c2430;
-    --primary: #2f3b4a;
-    --primary-foreground: #f8fafc;
-    --secondary: #e8edf2;
-    --secondary-foreground: #243041;
-    --muted: #eef2f6;
-    --muted-foreground: #667589;
-    --accent: #dce8e2;
-    --accent-foreground: #1f3a32;
-    --destructive: #b42318;
-    --destructive-foreground: #fff7f6;
-    --border: #d7dde5;
-    --input: #d7dde5;
-    --ring: #6f8f84;
-    --chart-1: #8fb4a8;
-    --chart-2: #c9b6a5;
-    --chart-3: #9bb0c7;
-    --chart-4: #d4a5b0;
-    --chart-5: #b7c9a5;
-    --radius: 0.55rem;
-
-    /* Compact dark navigation inspired by operational booking UIs */
-    --sidebar: #1b2330;
-    --sidebar-foreground: #e8eef5;
-    --sidebar-primary: #8fb4a8;
-    --sidebar-primary-foreground: #102018;
-    --sidebar-accent: #273244;
-    --sidebar-accent-foreground: #f4f7fb;
-    --sidebar-border: #2d3a4d;
-    --sidebar-ring: #8fb4a8;
-
-    --salon-ink: #1b2330;
-    --salon-slate: #667589;
-    --salon-mist: #f4f6f8;
-    --salon-blush: #e8c4cc;
-    --salon-sage: #8fb4a8;
-    --salon-sand: #c9b6a5;
-  }
-
   * {
     @apply border-border;
   }
@@ -58,12 +14,22 @@
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--salon-sage) 35%, white);
+    background: color-mix(in srgb, var(--salon-blush) 40%, white);
   }
 }
 
 @layer utilities {
   .appointment-chip {
-    @apply rounded-md border border-black/5 px-2 py-1 text-[11px] leading-tight shadow-sm;
+    @apply rounded-sm border border-black/5 px-1.5 py-1 text-[11px] leading-tight shadow-sm;
+  }
+
+  .unavailable-hatch {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      transparent,
+      transparent 4px,
+      var(--salon-hatch) 4px,
+      var(--salon-hatch) 8px
+    );
   }
 }

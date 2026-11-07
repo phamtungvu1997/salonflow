@@ -7,10 +7,10 @@ export default function KalenderPage() {
     <div data-testid="page-kalender">
       <PageHeader
         title="Kalender"
-        description="Multi-Mitarbeiter-Tagesansicht mit synthetischen Beispieldaten. Drag & Persistenz folgen in späteren Meilensteinen."
+        description="Dichte Tagesansicht mit Salon-Umschalter und Toolbar. Persistenz und Bibliotheks-Adapter folgen in M03–M09."
       />
       <PlaceholderNotice>
-        Dies ist eine visuelle Platzhalteransicht. Termine werden nicht gespeichert
+        Visuelle M02-Shell mit synthetischen Daten. Termine werden nicht gespeichert
         und stellen keine funktionierende Buchung dar.
       </PlaceholderNotice>
       <CalendarPlaceholder />

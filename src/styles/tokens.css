@@ -1,0 +1,50 @@
+/* SalonFlow design tokens — M02. Original palette; not Salonized assets. */
+
+:root {
+  --background: #f3f5f7;
+  --foreground: #1a222d;
+  --card: #ffffff;
+  --card-foreground: #1a222d;
+  --popover: #ffffff;
+  --popover-foreground: #1a222d;
+  --primary: #243041;
+  --primary-foreground: #f8fafc;
+  --secondary: #e9eef3;
+  --secondary-foreground: #243041;
+  --muted: #eef2f6;
+  --muted-foreground: #5f7084;
+  --accent: #f3dde3;
+  --accent-foreground: #5c3140;
+  --destructive: #b42318;
+  --destructive-foreground: #fff7f6;
+  --border: #d5dce5;
+  --input: #d5dce5;
+  --ring: #c98697;
+  --chart-1: #c98697;
+  --chart-2: #8fb4a8;
+  --chart-3: #c9b6a5;
+  --chart-4: #9bb0c7;
+  --chart-5: #b7c9a5;
+  --radius: 0.45rem;
+
+  --sidebar: #171e29;
+  --sidebar-foreground: #e8eef5;
+  --sidebar-primary: #d4a0ad;
+  --sidebar-primary-foreground: #2a151c;
+  --sidebar-accent: #2a3444;
+  --sidebar-accent-foreground: #f7fafc;
+  --sidebar-border: #2a3546;
+  --sidebar-ring: #d4a0ad;
+
+  --salon-ink: #171e29;
+  --salon-slate: #5f7084;
+  --salon-mist: #f3f5f7;
+  --salon-blush: #d4a0ad;
+  --salon-sage: #8fb4a8;
+  --salon-sand: #c9b6a5;
+  --salon-hatch: rgba(95, 112, 132, 0.18);
+
+  --cal-row-height: 28px;
+  --cal-staff-min: 145px;
+  --cal-time-width: 56px;
+}

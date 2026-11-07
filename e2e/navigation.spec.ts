@@ -32,4 +32,15 @@ test.describe("Hauptnavigation", () => {
     await page.getByTestId("sidebar-toggle").click();
     await expect(sidebar).toHaveAttribute("data-collapsed", "true");
   });
+
+  test("Salon-Umschalter und Kalender-Toolbar sind sichtbar", async ({
+    page,
+  }) => {
+    await page.goto("/kalender");
+    await expect(page.getByTestId("salon-selector")).toBeVisible();
+    await expect(page.getByTestId("calendar-toolbar")).toBeVisible();
+    await expect(page.getByTestId("calendar-day-grid")).toBeVisible();
+    await page.getByTestId("salon-selector").selectOption("salon_juliet");
+    await expect(page.getByTestId("salon-selector")).toHaveValue("salon_juliet");
+  });
 });

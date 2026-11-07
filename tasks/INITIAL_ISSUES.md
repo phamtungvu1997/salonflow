@@ -1,7 +1,7 @@
 # Initial small, issue-ready development tickets
 
 **Canonical milestones:** Master Architecture **M00–M19** (see [`docs/DOC_CONFLICTS.md`](../docs/DOC_CONFLICTS.md) for NS→V2 map).  
-**All status unless noted:** PROPOSED / NOT STARTED — except NS-002/M01 implemented on `feat/m01-repo-foundation` pending Owner merge approval.  
+**Status notes:** NS-002/M01 engineering complete (merge pending Owner). NS-004/M02 shell+tokens on `feat/m02-m03-m04-slices`. NS-003/M03 spike harness shipped (ADR-004 not final). NS-005 schema portion (M04) Drizzle+SQL shipped. Remaining tickets PROPOSED.  
 `SZ-*` source map in docs/02, `T-*` tests in docs/08. Calendar spike fixtures: **≥250** events (V2), not 200.
 
 | Ticket | Task | Lead | Depends on | Evidence / exit |

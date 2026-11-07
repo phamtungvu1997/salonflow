@@ -18,13 +18,26 @@ Numbering follows **Master Architecture V2** (not kit ADR numbers). Kit “ADR-0
 
 **Consequences:** Schema work starts in M04; Prisma is not introduced without a new ADR.
 
-## ADR-004 — Calendar library (Pending M03 spike)
+## ADR-004 — Calendar library (Pending — spike harness shipped)
 
-**Context:** DayPilot Lite vs React Big Calendar (or fallback) must pass a real interaction scorecard including iPad.
+**Context:** DayPilot Lite vs React Big Calendar (or native fallback) must pass a real interaction scorecard including iPad. V2 requires ≥20 staff and ≥250 events.
 
-**Decision:** Deferred until M03 evidence. UI must use a `CalendarAdapter` so the choice is replaceable.
+**Decision:** **Not final.** Harness lives under `/spike/kalender/*` with identical fixtures. Production calendar path must keep `CalendarAdapter`.
 
-**Consequences:** No library locked in M01/M02 shell work.
+### Scorecard (fill during device QA)
+
+| Criterion | DayPilot Lite | React Big Calendar | Native dense |
+|---|---|---|---|
+| 20 resource columns | TBD | TBD | Pass (CSS grid) |
+| ≥250 events render | TBD | TBD | Pass |
+| Desktop drag/resize | TBD | TBD | Limited (click only) |
+| Cross-staff move | TBD | TBD | TBD |
+| iPad tap select | TBD | TBD | Likely pass |
+| iPad drag or form fallback | TBD | TBD | Form-friendly |
+| German labels | Wired | Wired | Wired |
+| License OK for internal use | Verify | MIT | N/A |
+
+**Consequences:** M09 quick-create may bind to adapter behind feature flag after Owner accepts a row above. Do not remove spike routes until ADR accepted.
 
 ## ADR-005 — German locale defaults (Accepted)
 
