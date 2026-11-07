@@ -38,3 +38,13 @@
 - Vitest: at least one domain/helper unit test
 - Playwright: smoke navigation across primary routes
 - CI workflow runs install → lint → typecheck → unit → build → Playwright
+
+## Evidence (local, 2026-11-07)
+
+- Branch: `feat/m01-repo-foundation` @ `2306bf1`
+- `npm run lint` — pass
+- `npm run typecheck` — pass
+- `npm run test` — 2 passed
+- `npm run build` — pass
+- `npm run test:e2e` — 7 passed
+- Screenshots: `docs/evidence/m01/`
