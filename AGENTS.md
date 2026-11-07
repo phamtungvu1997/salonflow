@@ -9,12 +9,13 @@ Deliver functioning, reliable, production-ready **internal** booking software fo
 ## Source of truth (read in this order)
 
 1. [`docs/MASTER_ARCHITECTURE.md`](docs/MASTER_ARCHITECTURE.md) — product scope, architecture, milestones `M00–M19`, test program
-2. [`docs/DOC_CONFLICTS.md`](docs/DOC_CONFLICTS.md) — kit vs V2 overrides (**V2 wins**)
-3. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Architecture Decision Records
-4. [`docs/feature-specs/`](docs/feature-specs/) — approved SPEC-* tickets
-5. Supporting kit specs: [`docs/01_PRODUCT_CHARTER.md`](docs/01_PRODUCT_CHARTER.md) … [`docs/10_TRACEABILITY.md`](docs/10_TRACEABILITY.md)
-6. Backlog: [`tasks/INITIAL_ISSUES.md`](tasks/INITIAL_ISSUES.md) (NS-* mapped to V2 in DOC_CONFLICTS)
-7. This file — coordination and hard constraints
+2. [`docs/DOC_CONFLICTS.md`](docs/DOC_CONFLICTS.md) — overrides when other docs disagree (**V2 wins**)
+3. [`docs/SALONIZED_FUNCTIONAL_GUIDELINE.md`](docs/SALONIZED_FUNCTIONAL_GUIDELINE.md) — behavioral rules SF-001–SF-048 (does not override architecture)
+4. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Architecture Decision Records
+5. [`docs/feature-specs/`](docs/feature-specs/) — approved SPEC-* tickets
+6. Supporting kit specs: [`docs/01_PRODUCT_CHARTER.md`](docs/01_PRODUCT_CHARTER.md) … [`docs/10_TRACEABILITY.md`](docs/10_TRACEABILITY.md)
+7. Backlog: [`tasks/INITIAL_ISSUES.md`](tasks/INITIAL_ISSUES.md) and [`tasks/CROSS_MODULE_CONTRACT.md`](tasks/CROSS_MODULE_CONTRACT.md)
+8. This file — coordination and hard constraints
 
 Do **not** invent parallel conflicting rule systems. Historical baselines (`BASELINE_BLUEPRINT`, `PHASE_A_REFERENCE`, `MASTER_PROMPT_REFERENCE`, `KIT_*`) are reference only.
 

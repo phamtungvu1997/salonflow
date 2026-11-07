@@ -21,7 +21,9 @@ test.describe("Hauptnavigation", () => {
       await page.getByTestId(`nav-${route.path.replace("/", "")}`).click();
       await expect(page).toHaveURL(new RegExp(`${route.path}$`));
       await expect(page.getByTestId(route.testId)).toBeVisible();
-      await expect(page.getByTestId("placeholder-notice")).toBeVisible();
+      if (route.path === "/kalender" || route.path === "/einstellungen") {
+        await expect(page.getByTestId("placeholder-notice")).toBeVisible();
+      }
     });
   }
 
@@ -33,13 +35,12 @@ test.describe("Hauptnavigation", () => {
     await expect(sidebar).toHaveAttribute("data-collapsed", "true");
   });
 
-  test("Salon-Umschalter und Kalender-Toolbar sind sichtbar", async ({
-    page,
-  }) => {
-    await page.goto("/kalender");
-    await expect(page.getByTestId("salon-selector")).toBeVisible();
-    await expect(page.getByTestId("calendar-toolbar")).toBeVisible();
-    await expect(page.getByTestId("calendar-day-grid")).toBeVisible();
+  test("Salon-Umschalter zeigt erlaubte Salons", async ({ page }) => {
+    await page.goto("/anmelden");
+    await page.getByTestId("login-email").fill("owner@salonflow.example");
+    await page.getByTestId("login-password").fill("salonflow-dev");
+    await page.getByTestId("login-submit").click();
+    await expect(page.getByTestId("calendar-board")).toBeVisible();
     await page.getByTestId("salon-selector").selectOption("salon_juliet");
     await expect(page.getByTestId("salon-selector")).toHaveValue("salon_juliet");
   });

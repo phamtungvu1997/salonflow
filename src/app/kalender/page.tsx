@@ -1,19 +1,18 @@
 import { PageHeader } from "@/components/layout/page-header";
 import { PlaceholderNotice } from "@/components/layout/placeholder-notice";
-import { CalendarPlaceholder } from "@/features/calendar/calendar-placeholder";
+import { CalendarBoard } from "@/features/calendar/calendar-board";
 
 export default function KalenderPage() {
   return (
     <div data-testid="page-kalender">
       <PageHeader
         title="Kalender"
-        description="Dichte Tagesansicht mit Salon-Umschalter und Toolbar. Persistenz und Bibliotheks-Adapter folgen in M03–M09."
+        description="Termine werden in PostgreSQL gespeichert. Nur der eigene Salon ist sichtbar."
       />
       <PlaceholderNotice>
-        Visuelle M02-Shell mit synthetischen Daten. Termine werden nicht gespeichert
-        und stellen keine funktionierende Buchung dar.
+        Entwicklungsdaten mit synthetischen Zugängen. Keine echten Kundendaten.
       </PlaceholderNotice>
-      <CalendarPlaceholder />
+      <CalendarBoard />
     </div>
   );
 }

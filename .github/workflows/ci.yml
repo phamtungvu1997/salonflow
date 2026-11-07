@@ -37,6 +37,9 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: PostgreSQL integration tests
+        run: npm run test:integration
+
       - name: Production build
         run: npm run build
 

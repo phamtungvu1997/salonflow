@@ -44,7 +44,7 @@ function isHourLabel(slot: string) {
 
 export function CalendarDayGrid() {
   const { activeSalon } = useSalon();
-  const staff = placeholderStaff.filter((s) => s.salonId === activeSalon.id);
+  const staff = placeholderStaff.filter((s) => s.salonId === activeSalon?.id);
   const columns = staff.length > 0 ? staff : placeholderStaff.slice(0, 3);
 
   return (

@@ -1,6 +1,7 @@
 # Initial small, issue-ready development tickets
 
 **Canonical milestones:** Master Architecture **M00–M19** (see [`docs/DOC_CONFLICTS.md`](../docs/DOC_CONFLICTS.md) for NS→V2 map).  
+**Cross-module behavior:** [`docs/SALONIZED_FUNCTIONAL_GUIDELINE.md`](../docs/SALONIZED_FUNCTIONAL_GUIDELINE.md) rules SF-001–SF-048 are mapped to owners, side effects, and tests in [`CROSS_MODULE_CONTRACT.md`](CROSS_MODULE_CONTRACT.md). **Next coding ticket after Owner approval: NS-017.**  
 **Status notes:** NS-002/M01 engineering complete (merge pending Owner). NS-004/M02 shell+tokens on `feat/m02-m03-m04-slices`. NS-003/M03 spike harness shipped (ADR-004 not final). NS-005 schema portion (M04) Drizzle+SQL shipped. Remaining tickets PROPOSED.  
 `SZ-*` source map in docs/02, `T-*` tests in docs/08. Calendar spike fixtures: **≥250** events (V2), not 200.
 
