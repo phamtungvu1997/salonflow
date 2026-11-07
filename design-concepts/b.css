@@ -1,0 +1,78 @@
+:root {
+  --ink: #1a1d1a;
+  --navy: #141816;
+  --paper: #f6f4ef;
+  --line: #e4e0d8;
+  --muted: #6d6a64;
+  --hour: 64px;
+  font-family: "Segoe UI", sans-serif;
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: #ddd9d1; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+
+.app {
+  width: 1680px;
+  height: 1000px;
+  transform: scale(min(100vw / 1680, 100vh / 1000));
+  transform-origin: top left;
+  display: grid;
+  grid-template-columns: 188px 1fr 340px;
+  background: var(--paper);
+}
+.nav { background: var(--navy); color: #f3f1ea; padding: 22px 18px; display: flex; flex-direction: column; }
+.mark { font-family: Palatino, "Palatino Linotype", Georgia, serif; font-size: 28px; margin: 0; letter-spacing: -0.03em; }
+.sub { margin: 2px 0 22px; color: #b7b2a6; font-size: 12px; }
+.nav a { color: #ddd9d0; text-decoration: none; display: block; padding: 8px 0 8px 10px; border-left: 2px solid transparent; font-size: 14px; }
+.nav a.on { border-left-color: #d7b56d; color: white; }
+
+.toolbar { height: 58px; display: flex; align-items: center; gap: 14px; padding: 0 16px; border-bottom: 1px solid var(--line); }
+.date { display: flex; align-items: center; gap: 8px; }
+.date b { display: block; font-size: 15px; }
+.date span, .who, .kicker { color: var(--muted); font-size: 12px; }
+.date button, .quiet { width: 28px; height: 28px; border: 0; background: transparent; }
+.switch { display: flex; gap: 12px; }
+.switch button, .text { border: 0; background: transparent; height: 28px; color: var(--muted); padding: 0; }
+.switch .on { color: var(--ink); box-shadow: inset 0 -2px 0 var(--ink); border-radius: 0; }
+.grow { flex: 1; }
+.primary { height: 32px; padding: 0 12px; background: var(--ink); color: white; border: 0; border-radius: 2px; }
+
+.workspace { min-width: 0; display: flex; flex-direction: column; }
+.board { flex: 1; overflow: auto; }
+.grid { display: grid; grid-template-columns: 56px repeat(10, minmax(0, 1fr)); }
+.colhead, .gutter { position: sticky; top: 0; z-index: 2; background: var(--paper); height: 42px; border-bottom: 1px solid var(--line); }
+.colhead { display: flex; align-items: center; gap: 8px; padding: 0 8px; font-size: 13px; }
+.tick { width: 8px; height: 8px; border-radius: 50%; background: #c8b89a; }
+.time { height: var(--hour); font-size: 11px; color: var(--muted); text-align: right; padding: 4px 8px 0 0; }
+.track { position: relative; height: calc(var(--hour) * 10); background: white; border-left: 1px solid var(--line); }
+.off { position: absolute; left: 0; right: 0; background: #f3f1eb; }
+.appt {
+  position: absolute; left: 4px; right: 4px; background: white; border: 1px solid #e7e2d9;
+  border-left: 3px solid var(--stripe); border-radius: 2px; padding: 4px 6px; overflow: hidden; font-size: 11px;
+}
+.appt b { display: block; font-size: 12.5px; }
+.appt span { color: #5e5a54; }
+.shellac { --stripe: #d36b7d; }
+.gel { --stripe: #7d6aa8; }
+.mani { --stripe: #c4884a; }
+.pedi { --stripe: #5f8f6e; }
+.french { --stripe: #4f739e; }
+.grid { position: relative; }
+.now { position: absolute; left: 56px; right: 0; border-top: 1px solid #1a1d1a; z-index: 3; pointer-events: none; }
+.now i { position: absolute; top: -8px; left: 6px; font-style: normal; font-size: 10px; background: var(--ink); color: white; padding: 0 4px; }
+
+.sheet { border-left: 1px solid var(--line); background: #fbfaf7; padding: 22px 20px; display: flex; flex-direction: column; }
+.sheet h2 { font-family: Palatino, Georgia, serif; font-size: 32px; font-weight: 500; margin: 4px 0; letter-spacing: -0.03em; }
+.who { margin-top: 0; }
+.sheet h3 { margin: 0 0 6px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); font-weight: 650; }
+.sheet section { margin-top: 14px; }
+.sheet input, .sheet select, .sheet textarea { width: 100%; height: 36px; border: 0; border-bottom: 1px solid var(--line); background: transparent; padding: 0; border-radius: 0; }
+.sheet textarea { height: 64px; padding-top: 8px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.link { border: 0; background: transparent; padding: 6px 0 0; color: #6d5a32; font-size: 12px; }
+.note { margin-top: 14px; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.sheet footer { margin-top: auto; display: flex; justify-content: space-between; align-items: center; }
+.quiet { width: auto; }
+.time-col { position: relative; }

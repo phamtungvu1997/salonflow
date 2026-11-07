@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <title>Konzept A — Empfang</title>
+  <link rel="stylesheet" href="a.css?v=2" />
+</head>
+<body>
+  <div class="app">
+    <aside class="nav">
+      <div class="brand"><span>J</span><div><strong>Salonflow</strong><small>Jeannie · Hamburg</small></div></div>
+      <nav>
+        <a class="on" href="#kalender">Kalender</a>
+        <a href="#kunden">Kunden</a>
+        <a href="#team">Team</a>
+        <a href="#leistungen">Leistungen</a>
+        <a href="#einstellungen">Einstellungen</a>
+      </nav>
+      <div class="nav-foot">Empfang</div>
+    </aside>
+    <section class="workspace">
+      <header class="toolbar">
+        <button class="ghost" type="button">Heute</button>
+        <div class="switch" role="tablist">
+          <button type="button" class="on">Tag</button>
+          <button type="button">Woche</button>
+        </div>
+        <div class="date">
+          <button type="button" aria-label="Vorheriger Tag">‹</button>
+          <strong>Montag, 9. November</strong>
+          <button type="button" aria-label="Nächster Tag">›</button>
+        </div>
+        <label class="filter">Salon
+          <select aria-label="Salon"><option>Jeannie Nagelstudio</option></select>
+        </label>
+        <label class="filter">Mitarbeiter
+          <select aria-label="Mitarbeiter"><option>Alle im Dienst</option></select>
+        </label>
+        <span class="grow"></span>
+        <button class="primary" type="button">Neuer Termin</button>
+      </header>
+      <div class="board" id="board"></div>
+    </section>
+    <form class="dialog" id="dialog">
+      <header>
+        <p>Neuer Termin</p>
+        <h2>Lea · 11:00</h2>
+        <button type="button" class="close" aria-label="Schließen">×</button>
+      </header>
+      <label>Kundin
+        <input value="" placeholder="Name suchen oder neu anlegen" />
+      </label>
+      <div class="row">
+        <label>Behandlung
+          <select><option>Shellac Natur · 45 Min. · 35,00 €</option><option>Gel Auffüllung · 75 Min.</option></select>
+        </label>
+      </div>
+      <div class="row two">
+        <label>Beginn<input value="11:00" /></label>
+        <label>Dauer<input value="45 Min." /></label>
+      </div>
+      <label>Mitarbeiter
+        <select><option>Lea</option></select>
+      </label>
+      <label>Notiz
+        <textarea placeholder="Optional, sichtbar für das Team"></textarea>
+      </label>
+      <footer>
+        <button type="button" class="ghost">Abbrechen</button>
+        <button type="button" class="primary">Termin speichern</button>
+      </footer>
+    </form>
+  </div>
+  <script src="studio.js"></script>
+  <script src="a.js?v=4"></script>
+</body>
+</html>
