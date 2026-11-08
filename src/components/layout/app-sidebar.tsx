@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { SalonflowLogo } from "@/components/brand/salonflow-logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -35,22 +36,19 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
       >
         <div
           className={cn(
-            "flex items-center gap-3 px-4 py-5",
-            collapsed && "justify-center px-2",
+            "flex flex-col gap-2 px-4 py-4",
+            collapsed && "items-center px-2",
           )}
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-            <Sparkles className="size-4" aria-hidden />
-          </div>
+          <SalonflowLogo
+            variant={collapsed ? "sidebar-collapsed" : "sidebar-expanded"}
+            priority
+            className={cn(!collapsed && "animate-sidebar-slide")}
+          />
           {!collapsed && (
-            <div className="animate-sidebar-slide min-w-0">
-              <p className="font-display text-lg leading-none tracking-tight">
-                Salonflow
-              </p>
-              <p className="mt-1 truncate text-xs text-sidebar-foreground/60">
-                Jeannie · Juliet
-              </p>
-            </div>
+            <p className="truncate text-xs text-sidebar-foreground/60 animate-sidebar-slide">
+              Jeannie · Juliet
+            </p>
           )}
         </div>
 
