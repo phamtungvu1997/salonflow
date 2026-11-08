@@ -1,0 +1,5 @@
+# Block PII-bearing Salonized captures from commits until Owner provides redacted versions.
+salonized-calendar-day.png
+salonized-customer.png
+salonized-messages.png
+salonized-feedback.png

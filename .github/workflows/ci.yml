@@ -37,6 +37,9 @@ jobs:
       - name: Unit tests
         run: npm run test
 
+      - name: PostgreSQL integration tests
+        run: npm run test:integration
+
       - name: Production build
         run: npm run build
 
@@ -44,4 +47,7 @@ jobs:
         run: npx playwright install --with-deps chromium
 
       - name: Playwright smoke
+        env:
+          # Matches scripts/postgres-local.mjs defaults; webServer/next start need this in CI.
+          DATABASE_URL: postgres://postgres:password@127.0.0.1:54329/salonflow
         run: npm run test:e2e

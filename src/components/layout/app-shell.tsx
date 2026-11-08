@@ -31,12 +31,12 @@ function AppShellInner({ children }: AppShellProps) {
               <p className="text-[10px] uppercase tracking-[0.18em] text-muted-foreground">
                 Internes Terminbuch
               </p>
-              <p className="text-sm text-foreground/80">{activeSalon.city}</p>
+              <p className="text-sm text-foreground/80">{activeSalon?.city ?? "—"}</p>
             </div>
           </div>
-          <div className="rounded-md border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
-            M02 · Design-Shell
-          </div>
+          <a href="/anmelden" className="rounded-md border border-border bg-muted px-3 py-1 text-xs text-muted-foreground">
+            Anmelden
+          </a>
         </header>
         <main className="flex-1 animate-fade-up p-3 md:p-4">{children}</main>
       </div>

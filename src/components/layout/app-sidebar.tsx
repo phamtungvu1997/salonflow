@@ -96,7 +96,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         <div className="p-3">
           {!collapsed && (
             <div className="mb-3 rounded-lg bg-sidebar-accent/70 px-3 py-3 text-xs text-sidebar-foreground/70 animate-sidebar-slide">
-              Platzhalterdaten — noch keine Terminpersistenz.
+              Entwicklungsdaten. Termine werden in PostgreSQL gespeichert.
             </div>
           )}
           <Button
