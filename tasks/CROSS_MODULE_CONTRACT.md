@@ -69,4 +69,4 @@ Run against PostgreSQL. Skip the file when `DATABASE_URL` is absent; CI job for 
 
 NS-017 exit: IT-01 through IT-08 green on PostgreSQL **and CI `npm ci`/pipeline green**. No claim that the receptionist calendar is done.
 
-**2026-11-08 status:** PR #1 implements the Engine + harness UI and claims IT-01–IT-08 locally; GitHub Actions currently fails on lockfile/`npm ci`. Treat NS-017 as **not exit-complete** until CI passes. Discovery X-matrix is traceability only — do not invent parallel SF IDs. No-show must retain occupancy (Architecture Flow C). Hours/absence changes follow Flow D commit gates.
+**2026-11-08 status:** PR #1 HEAD `2b6c872` — CI **green** (npm ci, lint, typecheck, unit, IT-01–IT-08, build, Playwright 10/10). Engine closeout verified for Owner review; do **not** auto-merge. Harness calendar ≠ Salonized modal (NS-008). Discovery X-matrix is traceability only. No-show must retain occupancy (Flow C). Hours/absence follow Flow D gates.

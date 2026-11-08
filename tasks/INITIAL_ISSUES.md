@@ -2,7 +2,7 @@
 
 **Canonical milestones:** Master Architecture **M00–M19** (see [`docs/DOC_CONFLICTS.md`](../docs/DOC_CONFLICTS.md) for NS→V2 map).  
 **Cross-module behavior:** [`docs/SALONIZED_FUNCTIONAL_GUIDELINE.md`](../docs/SALONIZED_FUNCTIONAL_GUIDELINE.md) rules SF-001–SF-048 are mapped to owners, side effects, and tests in [`CROSS_MODULE_CONTRACT.md`](CROSS_MODULE_CONTRACT.md). Discovery evidence: [`docs/discovery/`](../docs/discovery/) (handoff: [`IMPLEMENTATION_HANDOFF.md`](../docs/discovery/IMPLEMENTATION_HANDOFF.md)).  
-**Status notes (2026-11-08):** NS-002/M01 done. M02/M03/M04 on shared branch. **Owner UI approved:** UI-01=B, UI-02=B, UI-03=A, UI-04=A, UI-05=A (+future color modes), UI-06=A, UI-07=defer PR#2. **NS-017** PR #1 — closeout in progress (lockfile sync for CI). Harness ≠ final UI. **Sequence:** NS-017 CI green → Owner review → NS-008 Salonized modal.  
+**Status notes (2026-11-08):** NS-002/M01 done. M02/M03/M04 on shared branch. **Owner UI approved:** UI-01=B, UI-02=B, UI-03=A, UI-04=A, UI-05=A (+future color modes), UI-06=A, UI-07=defer PR#2. **NS-017** PR #1 HEAD `2b6c872` — **CI green** (lint/typecheck/unit/IT-01–08/build/e2e). Closeout commits: lockfile, migrate+seed before IT, CI exit hang, DATABASE_URL for Playwright. Harness ≠ final UI. **Awaiting Owner merge approval;** next coding = NS-008 Salonized modal.  
 `SZ-*` source map in docs/02, `T-*` tests in docs/08. Calendar spike fixtures: **≥250** events (V2), not 200.
 
 | Ticket | Task | Lead | Depends on | Status / evidence / exit |
@@ -14,7 +14,7 @@
 | NS-005 | Catalog, staff, salons and auth model migrations with RBAC | backend | NS-001, NS-002 | Schema + login/salon scope **partial**; Calendar-view role parity still open |
 | NS-006 | Weekly schedules, overrides, breaks and absence domain | backend | NS-005 | Shifts used by Engine; **absence CRUD + Flow D gate incomplete** |
 | NS-007 | Exclusive resource allocations + server booking API | backend + QA | NS-005, NS-006 | **Absorbed into NS-017** Engine |
-| NS-017 | PostgreSQL booking engine (create/move/cancel + IT-01–IT-08) | backend + QA | M04 schema | **In PR #1** — closeout = CI green + Owner review before calling done |
+| NS-017 | PostgreSQL booking engine (create/move/cancel + IT-01–IT-08) | backend + QA | M04 schema | **CI green on PR #1** (`2b6c872`) — Owner merge approval still required; harness ≠ product UI |
 | NS-008 | Booking quick sheet + create end-to-end (Salonized-inspired, German) | frontend + backend | NS-017 closeout, NS-004 direction | **Next product E2E** — IT-09, IT-10; fix SF-020 single-txn customer+book |
 | NS-009 | Move/resize/cancel/status/no-show with audit | frontend + backend + QA | NS-008 | IT-11, IT-12; no-show retains occupancy (Flow C) |
 | NS-010 | Customer history, lookup, staff access restrictions | backend + frontend | NS-005, NS-008 | T-014 / SF-019,035 |
