@@ -67,4 +67,6 @@ Run against PostgreSQL. Skip the file when `DATABASE_URL` is absent; CI job for 
 | IT-15 | Receptionist token for salon A reads salon B customer. Then 403 and empty body. Restore drill returns the IT-06 appointment. | SF-044 (M05), SF restore (M16) |
 | IT-16 | Local Berlin time 2026-03-29 02:30 and 2026-10-25 02:30. Then spring slot is rejected; autumn slot stores an explicit offset. | SF-041 (M07, existing T-011/T-012) |
 
-NS-017 exit: IT-01 through IT-08 green on PostgreSQL. No claim that the receptionist calendar is done.
+NS-017 exit: IT-01 through IT-08 green on PostgreSQL **and CI `npm ci`/pipeline green**. No claim that the receptionist calendar is done.
+
+**2026-11-08 status:** PR #1 implements the Engine + harness UI and claims IT-01–IT-08 locally; GitHub Actions currently fails on lockfile/`npm ci`. Treat NS-017 as **not exit-complete** until CI passes. Discovery X-matrix is traceability only — do not invent parallel SF IDs. No-show must retain occupancy (Architecture Flow C). Hours/absence changes follow Flow D commit gates.
