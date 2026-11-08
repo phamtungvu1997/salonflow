@@ -44,6 +44,13 @@
   --salon-sand: #c9b6a5;
   --salon-hatch: rgba(95, 112, 132, 0.18);
 
+  /* Brand accents derived from approved logo (not calendar status colors). */
+  --brand-coral: #f28b7a;
+  --brand-magenta: #c94f9a;
+  --brand-purple: #5b2d8a;
+  --brand-ink: #3b1f66;
+  --brand-ring: #c94f9a;
+
   --cal-row-height: 28px;
   --cal-staff-min: 145px;
   --cal-time-width: 56px;
