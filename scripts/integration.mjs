@@ -1,7 +1,7 @@
 import { spawn } from "node:child_process";
 import { databaseUrl, startLocalPostgres } from "./postgres-local.mjs";
 
-await startLocalPostgres();
+const pg = await startLocalPostgres();
 process.env.DATABASE_URL = databaseUrl();
 
 async function run(command) {
@@ -12,6 +12,9 @@ async function run(command) {
   });
   const code = await new Promise((resolve) => child.on("exit", resolve));
   if ((code ?? 1) !== 0) {
+    if (pg) {
+      await pg.stop().catch(() => undefined);
+    }
     process.exit(code ?? 1);
   }
 }
@@ -20,3 +23,9 @@ async function run(command) {
 await run("node scripts/migrate.mjs");
 await run("node scripts/seed.mjs");
 await run("npx vitest run --config vitest.integration.config.ts");
+
+if (pg) {
+  await pg.stop().catch(() => undefined);
+}
+// Embedded Postgres otherwise keeps the event loop alive after IT-01–IT-08 pass.
+process.exit(0);
