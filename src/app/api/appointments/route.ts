@@ -13,6 +13,7 @@ const createSchema = z.object({
   serviceId: z.string().min(1),
   date: z.string(),
   start: z.string(),
+  notes: z.string().trim().max(2000).optional(),
   idempotencyKey: z.string().min(8).max(80).optional(),
 });
 

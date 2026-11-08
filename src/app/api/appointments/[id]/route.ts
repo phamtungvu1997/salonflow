@@ -10,6 +10,7 @@ const bodySchema = z.object({
   expectedVersion: z.number().int(),
   date: z.string(),
   start: z.string(),
+  notes: z.string().trim().max(2000).optional(),
 });
 
 export async function PATCH(
@@ -33,6 +34,11 @@ export async function PATCH(
       date: parsed.data.date,
       start: parsed.data.start,
     });
+    if (parsed.data.notes !== undefined) {
+      await sql`
+        UPDATE appointments SET notes = ${parsed.data.notes || null} WHERE id = ${id}
+      `;
+    }
     return Response.json(result);
   } catch (error) {
     return apiError(error);

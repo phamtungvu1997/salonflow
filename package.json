@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:prepare": "node scripts/migrate.mjs && node scripts/seed.mjs",
+    "db:prepare": "node scripts/migrate.mjs && node scripts/seed.mjs && node scripts/seed-demo.mjs",
     "test:integration": "node scripts/integration.mjs",
     "db:generate": "drizzle-kit generate",
     "ci": "npm run lint && npm run typecheck && npm run test && npm run build && npm run test:e2e"

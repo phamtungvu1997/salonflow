@@ -11,6 +11,8 @@ export type SessionUser = {
   email: string;
   displayName: string;
   salonIds: string[];
+  defaultSalonId: string;
+  rolesBySalon: Record<string, string>;
 };
 
 export async function getSessionUser(): Promise<SessionUser | null> {
@@ -26,14 +28,21 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   `;
   const user = rows[0];
   if (!user) return null;
-  const roles = await sql<{ salon_id: string }[]>`
-    SELECT salon_id FROM user_salon_roles WHERE user_id = ${user.id}
+  const roles = await sql<{ salon_id: string; role: string }[]>`
+    SELECT salon_id, role FROM user_salon_roles WHERE user_id = ${user.id}
   `;
+  const rolesBySalon: Record<string, string> = {};
+  for (const r of roles) {
+    rolesBySalon[r.salon_id] = r.role;
+  }
+  const salonIds = roles.map((role) => role.salon_id);
   return {
     id: user.id,
     email: user.email,
     displayName: user.display_name,
-    salonIds: roles.map((role) => role.salon_id),
+    salonIds,
+    defaultSalonId: salonIds[0] ?? "salon_jeannie",
+    rolesBySalon,
   };
 }
 
@@ -47,4 +56,10 @@ export function assertSalon(user: SessionUser, salonId: string) {
   if (!user.salonIds.includes(salonId)) {
     throw new BookingError(403, "forbidden", "Kein Zugriff auf diesen Salon.");
   }
+}
+
+export function canManageSalon(user: SessionUser, salonId: string): boolean {
+  if (!user.salonIds.includes(salonId)) return false;
+  const role = user.rolesBySalon[salonId] ?? "owner";
+  return role === "owner" || role === "manager" || role === "receptionist";
 }

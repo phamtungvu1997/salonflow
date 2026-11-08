@@ -31,8 +31,10 @@ test("Buchung bleibt nach dem Neuladen und Storno gibt die Zeit frei", async ({ 
   await page.getByTestId("nav-kalender").click();
   await page.getByTestId("calendar-date").fill("2026-11-09");
   await page.getByRole("button", { name: `${staffName} 10:00` }).click();
+  await page.getByTestId("booking-service").click();
+  await page.getByRole("option", { name: serviceName }).click();
+  await page.getByTestId("booking-customer-add").click();
   await page.getByTestId("booking-customer-name").fill(customerName);
-  await page.getByTestId("booking-service").selectOption({ label: `${serviceName} · 45 Min.` });
   await page.getByTestId("booking-save").click();
   await expect(page.getByTestId("calendar-message")).toHaveText("Termin gespeichert.");
   await expect(page.getByRole("button", { name: customerName })).toBeVisible();

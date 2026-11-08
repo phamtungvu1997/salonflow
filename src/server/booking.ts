@@ -110,6 +110,7 @@ export async function createAppointment(
     serviceId: string;
     date: string;
     start: string;
+    notes?: string;
     idempotencyKey?: string;
   },
 ) {
@@ -187,10 +188,11 @@ export async function createAppointment(
       }
 
       const appointmentId = `appt_${crypto.randomUUID()}`;
+      const notes = input.notes?.trim() || null;
       await tx`
-        INSERT INTO appointments (id, salon_id, customer_id, status, source, version, start_at, end_at)
+        INSERT INTO appointments (id, salon_id, customer_id, status, source, version, notes, start_at, end_at)
         VALUES (
-          ${appointmentId}, ${input.salonId}, ${input.customerId}, 'booked', 'internal', 1, ${start}, ${end}
+          ${appointmentId}, ${input.salonId}, ${input.customerId}, 'booked', 'internal', 1, ${notes}, ${start}, ${end}
         )
       `;
       await tx`

@@ -55,11 +55,19 @@ One Next.js App Router application at the repository root. Feature modules under
 ## Delivery loop
 
 1. Read architecture + DOC_CONFLICTS + relevant SPEC/NS ticket
-2. Isolated feature branch
-3. Smallest working slice
-4. Lint → typecheck → unit tests → build → Playwright (and DB tests when applicable)
-5. Draft PR with evidence (commands, results, screenshots)
-6. Independent review + Owner acceptance before merge
+2. Isolated feature branch (preserve uncommitted work; small, reviewable commits)
+3. Establish test baseline, identify affected modules/APIs, and define acceptance criteria
+4. Smallest working slice with modular React components (separate presentation, state/hooks, data fetching, API integration, and validation—no monolithic files)
+5. Lint → typecheck → unit tests → PostgreSQL integration tests → build → Playwright E2E + visual comparison against reference evidence
+6. Draft PR with traceability evidence (`SF-001–SF-048`, `T-matrix`, commands, results, sanitized screenshots)
+7. Pass all four mandatory quality gates (`GATE A` Architecture/Code Quality, `GATE B` Functional/Regression Tests, `GATE C` Visual/Interaction Fidelity, `GATE D` Product Owner Approval) before merge
+
+## Architecture, maintainability & regression protection
+
+- **Master Architecture V2 governs**: Video-driven UI reconstruction is a requirements-discovery and visual-verification technique within our spec-driven framework—never a replacement for `docs/MASTER_ARCHITECTURE.md`.
+- **Protect the booking engine**: `src/server/booking.ts` and PostgreSQL constraints (`resource_allocations_no_overlap`, working-hour & absence validation, idempotency, version checks, service snapshots, salon-scoped auth) are the sole authority for allocations. UI components never authorize availability or write allocations directly.
+- **Modular frontend**: Keep components focused and reusable (tables, dialogs, forms, toolbars, selectors, profiles). Do not introduce new frameworks, state libraries, or speculative database tables without an approved ADR and Owner sign-off.
+- **Regression discipline**: Never weaken or delete tests to get green results. Distinguish pre-existing failures from newly introduced regressions and verify cross-module contracts (e.g., Customer ↔ Calendar booking lookup and history).
 
 ## Language and naming
 

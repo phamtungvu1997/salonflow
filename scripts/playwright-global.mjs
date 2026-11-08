@@ -15,4 +15,8 @@ export default async function globalSetup() {
     const seed = spawn("node scripts/seed.mjs", { shell: true, stdio: "inherit" });
     seed.on("exit", (code) => (code === 0 ? resolve(null) : reject(new Error("seed failed"))));
   });
+  await new Promise((resolve, reject) => {
+    const demo = spawn("node scripts/seed-demo.mjs", { shell: true, stdio: "inherit" });
+    demo.on("exit", (code) => (code === 0 ? resolve(null) : reject(new Error("demo seed failed"))));
+  });
 }

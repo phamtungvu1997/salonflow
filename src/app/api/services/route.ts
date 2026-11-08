@@ -7,6 +7,7 @@ import { BookingError } from "@/server/time";
 
 const createSchema = z.object({
   salonId: z.string().min(1),
+  categoryId: z.string().min(1).optional(),
   name: z.string().trim().min(1).max(120),
   durationMinutes: z.number().int().min(5).max(480),
   priceCents: z.number().int().min(0).max(100000),
@@ -20,17 +21,41 @@ export async function GET(request: Request) {
     if (!salonId) throw new BookingError(422, "salon", "Salon fehlt.");
     assertSalon(user, salonId);
     const sql = getSql();
+
+    const categories = await sql<{
+      id: string;
+      name: string;
+      color: string | null;
+      sort_order: number;
+    }[]>`
+      SELECT id, name, color, sort_order
+      FROM service_categories
+      WHERE salon_id = ${salonId} OR salon_id IS NULL
+      ORDER BY sort_order ASC, name ASC
+    `;
+
     const services = await sql<{
       id: string;
       name: string;
+      category_id: string | null;
+      category_name: string | null;
+      category_color: string | null;
       duration_minutes: number;
       price_cents: number;
     }[]>`
-      SELECT s.id, s.name, ss.duration_minutes, ss.price_cents
+      SELECT
+        s.id,
+        s.name,
+        s.category_id,
+        c.name AS category_name,
+        c.color AS category_color,
+        ss.duration_minutes,
+        ss.price_cents
       FROM services s
       JOIN salon_services ss ON ss.service_id = s.id AND ss.salon_id = ${salonId} AND ss.active
+      LEFT JOIN service_categories c ON c.id = s.category_id
       WHERE s.active
-      ORDER BY s.name
+      ORDER BY COALESCE(c.sort_order, 999) ASC, s.name ASC
     `;
     const eligibility = await sql<{ service_id: string; staff_id: string }[]>`
       SELECT el.service_id, el.staff_id
@@ -38,9 +63,18 @@ export async function GET(request: Request) {
       JOIN salon_services ss ON ss.service_id = el.service_id AND ss.salon_id = ${salonId}
     `;
     return Response.json({
+      categories: categories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        color: cat.color ?? "#f9a8d4",
+        sortOrder: cat.sort_order ?? 0,
+      })),
       services: services.map((service) => ({
         id: service.id,
         name: service.name,
+        categoryId: service.category_id ?? (categories[0]?.id ?? null),
+        categoryName: service.category_name ?? (categories[0]?.name ?? "Allgemein"),
+        categoryColor: service.category_color ?? (categories[0]?.color ?? "#f9a8d4"),
         durationMinutes: service.duration_minutes,
         priceCents: service.price_cents,
         staffIds: eligibility
@@ -62,7 +96,10 @@ export async function POST(request: Request) {
     const sql = getSql();
     const serviceId = `svc_${crypto.randomUUID()}`;
     await sql.begin(async (tx) => {
-      await tx`INSERT INTO services (id, name) VALUES (${serviceId}, ${parsed.data.name})`;
+      await tx`
+        INSERT INTO services (id, category_id, name)
+        VALUES (${serviceId}, ${parsed.data.categoryId ?? null}, ${parsed.data.name})
+      `;
       await tx`
         INSERT INTO salon_services (salon_id, service_id, duration_minutes, price_cents)
         VALUES (${parsed.data.salonId}, ${serviceId}, ${parsed.data.durationMinutes}, ${parsed.data.priceCents})

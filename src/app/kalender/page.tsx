@@ -1,18 +1,16 @@
-import { PageHeader } from "@/components/layout/page-header";
-import { PlaceholderNotice } from "@/components/layout/placeholder-notice";
 import { CalendarBoard } from "@/features/calendar/calendar-board";
+import { initialCalendarDate } from "@/features/calendar/calendar-date";
 
-export default function KalenderPage() {
+export default async function KalenderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ datum?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const raw = Array.isArray(params.datum) ? params.datum[0] : params.datum;
   return (
-    <div data-testid="page-kalender">
-      <PageHeader
-        title="Kalender"
-        description="Termine werden in PostgreSQL gespeichert. Nur der eigene Salon ist sichtbar."
-      />
-      <PlaceholderNotice>
-        Entwicklungsdaten mit synthetischen Zugängen. Keine echten Kundendaten.
-      </PlaceholderNotice>
-      <CalendarBoard />
+    <div data-testid="page-kalender" className="flex min-h-0 flex-1 flex-col">
+      <CalendarBoard initialDate={initialCalendarDate(raw)} />
     </div>
   );
 }
