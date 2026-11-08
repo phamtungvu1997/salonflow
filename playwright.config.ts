@@ -20,6 +20,12 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
+    env: {
+      ...process.env,
+      // globalSetup writes .env.local; also pass through for next start reliability in CI.
+      DATABASE_URL:
+        process.env.DATABASE_URL ?? "postgres://postgres:password@127.0.0.1:54329/salonflow",
+    },
   },
   projects: [
     {
