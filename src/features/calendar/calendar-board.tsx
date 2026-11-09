@@ -33,6 +33,7 @@ import {
   toMinute,
 } from "@/features/calendar/calendar-date";
 import { useSalon } from "@/features/salons/salon-context";
+import { subscribeServiceCatalogUpdates } from "@/features/services/service-catalog-sync";
 import { cn } from "@/lib/utils";
 
 type Shift = { isoWeekday: number; startMinute: number; endMinute: number };
@@ -185,6 +186,14 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
 
   useEffect(() => {
     void reload().catch((error: Error) => setMessage(error.message));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSalon?.id, date, viewMode]);
+
+  useEffect(() => {
+    if (!activeSalon) return;
+    return subscribeServiceCatalogUpdates(activeSalon.id, () => {
+      void reload().catch(() => {});
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSalon?.id, date, viewMode]);
 

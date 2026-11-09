@@ -129,6 +129,7 @@ export interface ServiceRecord {
   categoryColor: string;
   durationMinutes: number;
   priceCents: number;
+  active?: boolean;
   staffIds: string[];
 }
 

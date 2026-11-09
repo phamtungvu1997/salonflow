@@ -1,6 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { subscribeServiceCatalogUpdates } from "@/features/services/service-catalog-sync";
+import { formatEuroPrice } from "@/features/settings/settings-types";
 
 import {
   type DiscountCodeRecord,
@@ -45,7 +48,51 @@ export function MarketingDiscountsSection({
   const [oneTimePerCustomer, setOneTimePerCustomer] = useState(false);
   const [limitTotalUses, setLimitTotalUses] = useState(false);
   const [specificServicesOnly, setSpecificServicesOnly] = useState(false);
+  const [selectedServiceIds, setSelectedServiceIds] = useState<string[]>([]);
+  const [catalogServices, setCatalogServices] = useState<
+    { id: string; name: string; categoryName: string; priceCents: number }[]
+  >([]);
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCatalog() {
+      try {
+        const res = await fetch(
+          `/api/services?salonId=${encodeURIComponent(salonId)}`,
+        );
+        if (!res.ok || cancelled) return;
+        const body = (await res.json()) as {
+          services?: {
+            id: string;
+            name: string;
+            categoryName?: string;
+            priceCents: number;
+          }[];
+        };
+        if (!cancelled && body.services) {
+          setCatalogServices(
+            body.services.map((s) => ({
+              id: s.id,
+              name: s.name,
+              categoryName: s.categoryName ?? "Allgemein",
+              priceCents: s.priceCents,
+            })),
+          );
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    void fetchCatalog();
+    const unsub = subscribeServiceCatalogUpdates(salonId, () => {
+      void fetchCatalog();
+    });
+    return () => {
+      cancelled = true;
+      unsub();
+    };
+  }, [salonId]);
 
   // Row context menu
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -599,12 +646,47 @@ export function MarketingDiscountsSection({
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
                     type="checkbox"
+                    data-testid="discount-modal-specific-services-checkbox"
                     checked={specificServicesOnly}
                     onChange={(event) => setSpecificServicesOnly(event.target.checked)}
                     className="h-4 w-4 rounded accent-[#f28b82]"
                   />
                   <span>Nur auf bestimmte Leistungen anwenden</span>
                 </label>
+                {specificServicesOnly ? (
+                  <div
+                    data-testid="discount-modal-services-list"
+                    className="mt-2 max-h-36 space-y-1.5 overflow-y-auto rounded-lg border border-slate-200 bg-slate-50 p-2.5"
+                  >
+                    {catalogServices.map((svc) => (
+                      <label
+                        key={svc.id}
+                        className="flex cursor-pointer items-center justify-between gap-2 rounded px-1.5 py-1 text-[11.5px] hover:bg-white"
+                      >
+                        <span className="flex items-center gap-2 truncate">
+                          <input
+                            type="checkbox"
+                            checked={selectedServiceIds.includes(svc.id)}
+                            onChange={() =>
+                              setSelectedServiceIds((prev) =>
+                                prev.includes(svc.id)
+                                  ? prev.filter((id) => id !== svc.id)
+                                  : [...prev, svc.id],
+                              )
+                            }
+                            className="h-3.5 w-3.5 rounded accent-[#f28b82]"
+                          />
+                          <span className="truncate font-medium text-slate-900">
+                            {svc.name}
+                          </span>
+                        </span>
+                        <span className="shrink-0 text-[11px] font-semibold text-slate-600">
+                          {formatEuroPrice(svc.priceCents)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                ) : null}
               </div>
             </div>
 

@@ -111,7 +111,7 @@ export function SettingsWorkspace() {
     const [settingsRes, staffRes, servicesRes, absencesRes] = await Promise.all([
       fetch(`/api/settings?salonId=${encodeURIComponent(salonId)}`),
       fetch(`/api/staff?salonId=${encodeURIComponent(salonId)}&includeInactive=true`),
-      fetch(`/api/services?salonId=${encodeURIComponent(salonId)}`),
+      fetch(`/api/services?salonId=${encodeURIComponent(salonId)}&includeInactive=true`),
       fetch(`/api/absences?salonId=${encodeURIComponent(salonId)}`),
     ]);
 

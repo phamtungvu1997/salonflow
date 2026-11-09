@@ -17,7 +17,9 @@ const createSchema = z.object({
 export async function GET(request: Request) {
   try {
     const user = await requireUser();
-    const salonId = new URL(request.url).searchParams.get("salonId");
+    const url = new URL(request.url);
+    const salonId = url.searchParams.get("salonId");
+    const includeInactive = url.searchParams.get("includeInactive") === "true";
     if (!salonId) throw new BookingError(422, "salon", "Salon fehlt.");
     assertSalon(user, salonId);
     const sql = getSql();
@@ -42,6 +44,7 @@ export async function GET(request: Request) {
       category_color: string | null;
       duration_minutes: number;
       price_cents: number;
+      active: boolean;
     }[]>`
       SELECT
         s.id,
@@ -50,12 +53,14 @@ export async function GET(request: Request) {
         c.name AS category_name,
         c.color AS category_color,
         ss.duration_minutes,
-        ss.price_cents
+        ss.price_cents,
+        (s.active AND ss.active) AS active
       FROM services s
-      JOIN salon_services ss ON ss.service_id = s.id AND ss.salon_id = ${salonId} AND ss.active
+      JOIN salon_services ss ON ss.service_id = s.id AND ss.salon_id = ${salonId}
       LEFT JOIN service_categories c ON c.id = s.category_id
-      WHERE s.active
-      ORDER BY COALESCE(c.sort_order, 999) ASC, s.name ASC
+      WHERE s.name <> 'Maniküre Test'
+        AND (${includeInactive} = true OR (s.active AND ss.active))
+      ORDER BY COALESCE(c.sort_order, 999) ASC, (s.active AND ss.active) DESC, s.name ASC
     `;
     const eligibility = await sql<{ service_id: string; staff_id: string }[]>`
       SELECT el.service_id, el.staff_id
@@ -77,6 +82,7 @@ export async function GET(request: Request) {
         categoryColor: service.category_color ?? (categories[0]?.color ?? "#f9a8d4"),
         durationMinutes: service.duration_minutes,
         priceCents: service.price_cents,
+        active: service.active,
         staffIds: eligibility
           .filter((row) => row.service_id === service.id)
           .map((row) => row.staff_id),

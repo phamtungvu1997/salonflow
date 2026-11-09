@@ -1,11 +1,12 @@
 "use client";
 
 import { Maximize2, Minimize2, X } from "lucide-react";
-import { FormEvent, useEffect, useId, useMemo, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { api } from "@/features/booking/api";
 import { isoWeekdayFromDate, minutesLabel, toMinute } from "@/features/calendar/calendar-date";
+import { subscribeServiceCatalogUpdates } from "@/features/services/service-catalog-sync";
 import { cn } from "@/lib/utils";
 
 import { AppointmentNotes } from "./appointment-notes";
@@ -38,7 +39,7 @@ export function AppointmentModal({
   initialStart,
   initialStaffId,
   initialStaff,
-  services,
+  services: initialServices,
   preselectedCustomer = null,
   onClose,
   onBooked,
@@ -60,8 +61,10 @@ export function AppointmentModal({
 
   const [tab, setTab] = useState<TabId>("appointment");
   const [expanded, setExpanded] = useState(false);
+  const [catalogServices, setCatalogServices] = useState<ModalService[]>(initialServices);
   const [serviceId, setServiceId] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(0);
+  const [durationManuallyEdited, setDurationManuallyEdited] = useState(false);
   const [staffId, setStaffId] = useState(initialStaffId);
   const [extraLines, setExtraLines] = useState<ServiceLine[]>([]);
   const [date, setDate] = useState(initialDate);
@@ -82,17 +85,75 @@ export function AppointmentModal({
   const [openList, setOpenList] = useState<string | null>(null);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [catalogNotice, setCatalogNotice] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  const service = services.find((item) => item.id === serviceId) ?? null;
+  useEffect(() => {
+    setCatalogServices(initialServices);
+  }, [initialServices]);
+
+  const service = catalogServices.find((item) => item.id === serviceId) ?? null;
+
+  const refreshServiceCatalog = useCallback(
+    async (notifyIfSelectionAffected = false) => {
+      try {
+        const res = await api<{ services: ModalService[] }>(
+          `/api/services?salonId=${encodeURIComponent(salonId)}`,
+        );
+        const latest = res.services;
+        setCatalogServices(latest);
+
+        if (serviceId) {
+          const updatedSelected = latest.find((item) => item.id === serviceId);
+          if (!updatedSelected) {
+            setServiceId("");
+            setDurationMinutes(0);
+            setCatalogNotice(
+              "Die ausgewählte Leistung wurde in den Einstellungen deaktiviert. Bitte wählen Sie eine aktive Leistung.",
+            );
+          } else {
+            if (!durationManuallyEdited && updatedSelected.durationMinutes !== durationMinutes) {
+              setDurationMinutes(updatedSelected.durationMinutes);
+            }
+            if (!updatedSelected.staffIds.includes(staffId)) {
+              const fallbackStaff = staff.find((member) =>
+                updatedSelected.staffIds.includes(member.id),
+              );
+              setStaffId(fallbackStaff?.id ?? "");
+              setCatalogNotice(
+                `Die Mitarbeiter-Zuordnung für „${updatedSelected.name}“ wurde aktualisiert.`,
+              );
+            } else if (notifyIfSelectionAffected) {
+              setCatalogNotice(
+                `Leistungskatalog aktualisiert („${updatedSelected.name}“).`,
+              );
+            }
+          }
+        }
+      } catch {
+        // Ignore transient network errors during background catalog sync
+      }
+    },
+    [salonId, serviceId, durationManuallyEdited, durationMinutes, staffId, staff],
+  );
+
+  // Fetch authoritative catalog on modal open and subscribe to cross-tab / cross-screen updates
+  useEffect(() => {
+    void refreshServiceCatalog(false);
+    return subscribeServiceCatalogUpdates(salonId, () => {
+      void refreshServiceCatalog(true);
+    });
+  }, [salonId, refreshServiceCatalog]);
 
   useEffect(() => {
     const node = dialogRef.current;
     if (!node) return;
     const focusable = () =>
-      [...node.querySelectorAll<HTMLElement>("button:not([disabled]), input:not([disabled]), textarea, [href]")].filter(
-        (element) => !element.hasAttribute("data-focus-skip"),
-      );
+      [
+        ...node.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), textarea, [href]",
+        ),
+      ].filter((element) => !element.hasAttribute("data-focus-skip"));
     focusable()[0]?.focus();
     function onKey(event: globalThis.KeyboardEvent) {
       if (event.key !== "Tab") return;
@@ -114,9 +175,10 @@ export function AppointmentModal({
 
   useEffect(() => {
     let cancelled = false;
-    api<{ staff: ModalStaff[]; appointments: { staffId: string; startMinute: number; endMinute: number }[] }>(
-      `/api/calendar?salonId=${salonId}&date=${date}`,
-    )
+    api<{
+      staff: ModalStaff[];
+      appointments: { staffId: string; startMinute: number; endMinute: number }[];
+    }>(`/api/calendar?salonId=${salonId}&date=${date}`)
       .then((body) => {
         if (cancelled) return;
         setStaff(body.staff.filter((member) => !member.displayName.startsWith("Archiv ")));
@@ -192,7 +254,7 @@ export function AppointmentModal({
   const totalPriceCents =
     (service?.priceCents ?? 0) +
     extraLines.reduce((sum, line) => {
-      const extraSvc = services.find((item) => item.id === line.serviceId);
+      const extraSvc = catalogServices.find((item) => item.id === line.serviceId);
       return sum + (extraSvc?.priceCents ?? 0);
     }, 0);
 
@@ -200,12 +262,14 @@ export function AppointmentModal({
 
   function chooseService(id: string) {
     setServiceId(id);
-    const next = services.find((item) => item.id === id);
+    setCatalogNotice(null);
+    setDurationManuallyEdited(false);
+    const next = catalogServices.find((item) => item.id === id);
     if (next) {
       setDurationMinutes(next.durationMinutes);
       if (!next.staffIds.includes(staffId)) {
         const fallback = staff.find((member) => next.staffIds.includes(member.id));
-        if (fallback) setStaffId(fallback.id);
+        setStaffId(fallback?.id ?? "");
       }
     }
   }
@@ -226,7 +290,9 @@ export function AppointmentModal({
     }
     const existingWalkIn = allCustomers.find((customer) => customer.displayName === "Walk-in");
     if (existingWalkIn) return existingWalkIn.id;
-    const found = await api<{ customers: ModalCustomer[] }>(`/api/customers?salonId=${salonId}&q=Walk-in`);
+    const found = await api<{ customers: ModalCustomer[] }>(
+      `/api/customers?salonId=${salonId}&q=Walk-in`,
+    );
     const match = found.customers.find((customer) => customer.displayName === "Walk-in");
     if (match) return match.id;
     const created = await api<{ customerId: string }>("/api/customers", {
@@ -242,10 +308,10 @@ export function AppointmentModal({
 
     const chosenServiceId =
       serviceId ||
-      services.find((item) => item.staffIds.includes(staffId))?.id ||
-      services[0]?.id ||
+      catalogServices.find((item) => item.staffIds.includes(staffId))?.id ||
+      catalogServices[0]?.id ||
       "";
-    const chosenService = services.find((item) => item.id === chosenServiceId);
+    const chosenService = catalogServices.find((item) => item.id === chosenServiceId);
     const chosenStaffId =
       (chosenService && chosenService.staffIds.includes(staffId)
         ? staffId
@@ -295,7 +361,7 @@ export function AppointmentModal({
         let cursorMinutes = toMinute(slotTarget.start) + (chosenService?.durationMinutes ?? 45);
         for (const extra of extraLines) {
           if (!extra.serviceId) continue;
-          const extraSvc = services.find((item) => item.id === extra.serviceId);
+          const extraSvc = catalogServices.find((item) => item.id === extra.serviceId);
           await api("/api/appointments", {
             method: "POST",
             body: JSON.stringify({
@@ -344,7 +410,10 @@ export function AppointmentModal({
   const activeTabMeta = tabs.find((item) => item.id === tab) ?? tabs[0];
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#1c1e21]/40 p-[10px]" onMouseDown={onClose}>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1c1e21]/40 p-[10px]"
+      onMouseDown={onClose}
+    >
       <form
         ref={dialogRef}
         role="dialog"
@@ -360,7 +429,10 @@ export function AppointmentModal({
         className="flex min-w-0 flex-col overflow-hidden rounded-[10px] bg-white shadow-[0_16px_50px_rgba(20,24,40,0.28)] motion-safe:transition-opacity motion-safe:duration-150"
       >
         <header className="flex h-[58px] shrink-0 items-center gap-3 border-b border-[#eef0f3] px-5">
-          <h2 id={titleId} className="shrink-0 text-[17px] font-semibold tracking-tight text-[#1c1e21]">
+          <h2
+            id={titleId}
+            className="shrink-0 text-[17px] font-semibold tracking-tight text-[#1c1e21]"
+          >
             {activeTabMeta.title}
           </h2>
           <div className="flex min-w-0 flex-1 justify-center">
@@ -415,22 +487,42 @@ export function AppointmentModal({
 
         {tab === "appointment" ? (
           <div className="grid min-h-0 flex-1 grid-cols-1 min-[900px]:grid-cols-[minmax(0,1fr)_minmax(220px,28%)]">
-            <div className="min-h-0 overflow-y-auto bg-[#f4f5f7] p-4" data-testid="booking-form-scroll">
+            <div
+              className="min-h-0 overflow-y-auto bg-[#f4f5f7] p-4"
+              data-testid="booking-form-scroll"
+            >
               <div className="flex flex-col gap-3">
+                {catalogNotice ? (
+                  <div
+                    role="status"
+                    data-testid="booking-catalog-notice"
+                    className="rounded-lg border border-amber-200 bg-amber-50 px-3.5 py-2 text-xs font-medium text-amber-900"
+                  >
+                    {catalogNotice}
+                  </div>
+                ) : null}
                 <AppointmentServiceRow
-                  services={services}
+                  services={catalogServices}
                   staff={staff}
                   serviceId={serviceId}
                   staffId={staffId}
                   durationMinutes={effectiveDuration}
                   extraLines={extraLines}
                   openList={openList}
-                  onOpenList={setOpenList}
+                  onOpenList={(next) => {
+                    if (next === "service") {
+                      void refreshServiceCatalog(false);
+                    }
+                    setOpenList(next);
+                  }}
                   onService={chooseService}
-                  onDuration={setDurationMinutes}
+                  onDuration={(mins) => {
+                    setDurationManuallyEdited(true);
+                    setDurationMinutes(mins);
+                  }}
                   onStaff={setStaffId}
                   onAddServiceLine={() => {
-                    const fallbackService = services[0];
+                    const fallbackService = catalogServices[0];
                     setExtraLines((prev) => [
                       ...prev,
                       {
@@ -540,7 +632,10 @@ export function AppointmentModal({
             </div>
           </div>
         ) : (
-          <div className="min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-6" data-testid="booking-form-scroll">
+          <div
+            className="min-h-0 flex-1 overflow-y-auto bg-[#f4f5f7] p-6"
+            data-testid="booking-form-scroll"
+          >
             <CalendarEventTabForm
               key={tab}
               kind={tab}

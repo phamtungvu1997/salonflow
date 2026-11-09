@@ -83,12 +83,16 @@ export function CustomerAdmin() {
 
   async function openBookingForCustomer(customer: CustomerRecord) {
     try {
-      const cal = await api<{
-        staff: ModalStaff[];
-        services: ModalService[];
-      }>(`/api/calendar?salonId=${encodeURIComponent(salonId)}&date=2026-11-09`);
+      const [cal, svc] = await Promise.all([
+        api<{
+          staff: ModalStaff[];
+        }>(`/api/calendar?salonId=${encodeURIComponent(salonId)}&date=2026-11-09`),
+        api<{
+          services: ModalService[];
+        }>(`/api/services?salonId=${encodeURIComponent(salonId)}`),
+      ]);
       setModalStaff(cal.staff.filter((s) => !s.displayName.startsWith("Archiv ")));
-      setModalServices(cal.services);
+      setModalServices(svc.services);
     } catch {
       // Fallback empty if calendar metadata fails
     }

@@ -156,6 +156,7 @@ test.describe("Video-Driven Settings Module Reconstruction (Slices 1–5 + Cross
     await expect(page.getByTestId("delete-category-confirm-modal")).toBeHidden();
 
     // Open Service Editor Two-Column Modal
+    await page.getByTestId("service-category-bar-Maniküre").click();
     await page.getByTestId("settings-service-edit-Maniküre").click();
     await expect(page.getByTestId("service-editor-modal")).toBeVisible();
     await expect(page.getByTestId("service-modal-name")).toHaveValue("Maniküre");

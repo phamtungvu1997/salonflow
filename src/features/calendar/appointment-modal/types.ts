@@ -10,8 +10,12 @@ export type ModalStaff = {
 export type ModalService = {
   id: string;
   name: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  categoryColor?: string | null;
   durationMinutes: number;
   priceCents: number;
+  active?: boolean;
   staffIds: string[];
 };
 

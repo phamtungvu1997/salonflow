@@ -3,6 +3,8 @@
 import { Trash2 } from "lucide-react";
 import { useState } from "react";
 
+import { formatPrice } from "@/features/calendar/calendar-date";
+
 import { ListboxField } from "./listbox-field";
 import type { ModalService, ModalStaff } from "./types";
 
@@ -13,10 +15,12 @@ export type ServiceLine = {
   durationMinutes: number;
 };
 
-const durationOptions = [15, 30, 45, 60, 75, 90, 120].map((mins) => ({
-  id: String(mins),
-  label: `${mins} Min.`,
-}));
+const durationOptions = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 105, 120].map(
+  (mins) => ({
+    id: String(mins),
+    label: `${mins} Min.`,
+  }),
+);
 
 export function AppointmentServiceRow({
   services,
@@ -54,6 +58,15 @@ export function AppointmentServiceRow({
   const shownDuration = durationMinutes || service?.durationMinutes || 0;
   const [extraOpenKey, setExtraOpenKey] = useState<string | null>(null);
 
+  const serviceOptions = services.map((item) => ({
+    id: item.id,
+    label: item.name,
+    hint: `${item.durationMinutes} Min.`,
+    secondaryHint: formatPrice(item.priceCents),
+    groupLabel: item.categoryName ?? undefined,
+    groupColor: item.categoryColor ?? undefined,
+  }));
+
   return (
     <section className="rounded-[10px] border border-[#e6e8ee] bg-white p-4">
       <h3 className="text-[15px] font-semibold text-[#1c1e21]">Leistungen</h3>
@@ -63,7 +76,7 @@ export function AppointmentServiceRow({
           required
           placeholder="Auswählen"
           valueLabel={service?.name}
-          options={services.map((item) => ({ id: item.id, label: item.name, hint: `${item.durationMinutes} Min.` }))}
+          options={serviceOptions}
           open={openList === "service"}
           onOpenChange={(open) => onOpenList(open ? "service" : null)}
           onSelect={onService}
@@ -92,7 +105,7 @@ export function AppointmentServiceRow({
           label="Mitarbeiter"
           required
           placeholder="Auswählen"
-          valueLabel={staff.find((member) => member.id === staffId)?.displayName}
+          valueLabel={eligible.find((member) => member.id === staffId)?.displayName}
           options={eligible.map((member) => ({ id: member.id, label: member.displayName }))}
           open={openList === "employee"}
           onOpenChange={(open) => onOpenList(open ? "employee" : null)}
@@ -117,11 +130,7 @@ export function AppointmentServiceRow({
               label="Weitere Leistung"
               placeholder="Auswählen"
               valueLabel={lineService?.name}
-              options={services.map((item) => ({
-                id: item.id,
-                label: item.name,
-                hint: `${item.durationMinutes} Min.`,
-              }))}
+              options={serviceOptions}
               open={extraOpenKey === `${line.key}-service`}
               onOpenChange={(open) => setExtraOpenKey(open ? `${line.key}-service` : null)}
               onSelect={(id) => {
@@ -147,7 +156,7 @@ export function AppointmentServiceRow({
             <ListboxField
               label="Mitarbeiter"
               placeholder="Auswählen"
-              valueLabel={staff.find((member) => member.id === line.staffId)?.displayName}
+              valueLabel={lineEligible.find((member) => member.id === line.staffId)?.displayName}
               options={lineEligible.map((member) => ({ id: member.id, label: member.displayName }))}
               open={extraOpenKey === `${line.key}-staff`}
               onOpenChange={(open) => setExtraOpenKey(open ? `${line.key}-staff` : null)}
@@ -167,7 +176,9 @@ export function AppointmentServiceRow({
         );
       })}
 
-      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b919a]">Häufig gebucht</p>
+      <p className="mt-3 text-[11px] font-medium uppercase tracking-[0.04em] text-[#8b919a]">
+        Häufig gebucht
+      </p>
       <div className="mt-1.5 flex flex-wrap gap-1.5">
         {services.slice(0, 4).map((item) => (
           <button

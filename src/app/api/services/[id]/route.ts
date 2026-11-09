@@ -24,16 +24,31 @@ export async function PATCH(
     const { id } = await context.params;
     const parsed = updateServiceSchema.safeParse(await request.json());
     if (!parsed.success) {
-      throw new BookingError(422, "invalid", parsed.error.issues[0]?.message ?? "Ungültige Leistungsdaten.");
+      throw new BookingError(
+        422,
+        "invalid",
+        parsed.error.issues[0]?.message ?? "Ungültige Leistungsdaten.",
+      );
     }
     const body = parsed.data;
     assertSalon(user, body.salonId);
     if (!canManageSalon(user, body.salonId)) {
-      throw new BookingError(403, "forbidden", "Keine Berechtigung zum Bearbeiten von Leistungen.");
+      throw new BookingError(
+        403,
+        "forbidden",
+        "Keine Berechtigung zum Bearbeiten von Leistungen.",
+      );
     }
 
     const sql = getSql();
+    let futureAppointmentCount = 0;
+
     await sql.begin(async (tx) => {
+      const existingSvc = await tx<{ name: string }[]>`
+        SELECT name FROM services WHERE id = ${id}
+      `;
+      const prevName = existingSvc[0]?.name ?? "";
+
       if (body.name !== undefined || body.categoryId !== undefined) {
         await tx`
           UPDATE services
@@ -54,6 +69,19 @@ export async function PATCH(
       `;
 
       if (body.staffIds !== undefined) {
+        for (const staffId of body.staffIds) {
+          const assigned = await tx`
+            SELECT 1 FROM staff_salon_assignments
+            WHERE staff_id = ${staffId} AND salon_id = ${body.salonId} AND active
+          `;
+          if (assigned.length === 0) {
+            throw new BookingError(
+              422,
+              "staff_salon",
+              "Mitarbeiter gehört nicht zum Salon.",
+            );
+          }
+        }
         await tx`
           DELETE FROM staff_services
           WHERE service_id = ${id}
@@ -69,9 +97,26 @@ export async function PATCH(
           `;
         }
       }
+
+      if (prevName) {
+        const countRows = await tx<{ count: number }[]>`
+          SELECT count(DISTINCT a.id)::int AS count
+          FROM appointments a
+          JOIN appointment_services i ON i.appointment_id = a.id
+          WHERE a.salon_id = ${body.salonId}
+            AND a.status <> 'cancelled'
+            AND a.start_at >= now()
+            AND i.title_snapshot = ${prevName}
+        `;
+        futureAppointmentCount = countRows[0]?.count ?? 0;
+      }
     });
 
-    return Response.json({ ok: true, serviceId: id });
+    return Response.json({
+      ok: true,
+      serviceId: id,
+      futureAppointmentCount,
+    });
   } catch (error) {
     return apiError(error);
   }
@@ -84,20 +129,49 @@ export async function DELETE(
   try {
     const user = await requireUser();
     const { id } = await context.params;
-    const salonId = new URL(request.url).searchParams.get("salonId") ?? user.defaultSalonId;
+    const salonId =
+      new URL(request.url).searchParams.get("salonId") ?? user.defaultSalonId;
     assertSalon(user, salonId);
     if (!canManageSalon(user, salonId)) {
-      throw new BookingError(403, "forbidden", "Keine Berechtigung zum Deaktivieren von Leistungen.");
+      throw new BookingError(
+        403,
+        "forbidden",
+        "Keine Berechtigung zum Deaktivieren von Leistungen.",
+      );
     }
 
     const sql = getSql();
+    const existingSvc = await sql<{ name: string }[]>`
+      SELECT name FROM services WHERE id = ${id}
+    `;
+    const serviceName = existingSvc[0]?.name ?? "";
+
     await sql`
       UPDATE salon_services
       SET active = false
       WHERE salon_id = ${salonId} AND service_id = ${id}
     `;
 
-    return Response.json({ deleted: true, serviceId: id });
+    let futureAppointmentCount = 0;
+    if (serviceName) {
+      const countRows = await sql<{ count: number }[]>`
+        SELECT count(DISTINCT a.id)::int AS count
+        FROM appointments a
+        JOIN appointment_services i ON i.appointment_id = a.id
+        WHERE a.salon_id = ${salonId}
+          AND a.status <> 'cancelled'
+          AND a.start_at >= now()
+          AND i.title_snapshot = ${serviceName}
+      `;
+      futureAppointmentCount = countRows[0]?.count ?? 0;
+    }
+
+    return Response.json({
+      deleted: true,
+      deactivated: true,
+      serviceId: id,
+      futureAppointmentCount,
+    });
   } catch (error) {
     return apiError(error);
   }

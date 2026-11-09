@@ -372,4 +372,69 @@ describe.skipIf(!process.env.DATABASE_URL)("NS-017 booking engine", () => {
     expect(active[0]?.start_at.toISOString()).toBe(zonedDateTimeToUtc(monday, winnerStart).toISOString());
     expect(await countAllocations(staffId, true)).toBe(1);
   });
+
+  it("IT-09 rejects booking and rescheduling when employee is not eligible for service, and preserves historical snapshots on service update/deactivation", async () => {
+    const sql = getSql();
+    const staffEligible = await makeStaff(salonA);
+    const staffIneligible = await makeStaff(salonA);
+    const serviceId = await makeService(salonA, staffEligible, 45);
+    const customerId = await makeCustomer(salonA);
+
+    // 1. Backend rejects createAppointment for ineligible staff
+    await expect(
+      createAppointment(sql, actor, {
+        salonId: salonA,
+        staffId: staffIneligible,
+        customerId,
+        serviceId,
+        date: monday,
+        start: "10:00",
+      }),
+    ).rejects.toMatchObject({ status: 422, code: "ineligible" });
+
+    // 2. Eligible staff books successfully (snapshot: 45 min, 3500 cents)
+    const booked = await createAppointment(sql, actor, {
+      salonId: salonA,
+      staffId: staffEligible,
+      customerId,
+      serviceId,
+      date: monday,
+      start: "10:00",
+    });
+
+    // 3. Update catalog duration (60 min) and price (4900 cents) and deactivate service
+    await sql`
+      UPDATE salon_services
+      SET duration_minutes = 60, price_cents = 4900, active = false
+      WHERE salon_id = ${salonA} AND service_id = ${serviceId}
+    `;
+
+    // 4. Deactivated service cannot be used for new bookings
+    await expect(
+      createAppointment(sql, actor, {
+        salonId: salonA,
+        staffId: staffEligible,
+        customerId,
+        serviceId,
+        date: monday,
+        start: "12:00",
+      }),
+    ).rejects.toMatchObject({ status: 422, code: "ineligible" });
+
+    // 5. Historical appointment snapshot remains intact (45 min, 3500 cents, 'Maniküre Test')
+    const [snapshot] = await sql<{
+      title_snapshot: string;
+      duration_minutes_snapshot: number;
+      price_cents_snapshot: number;
+    }[]>`
+      SELECT title_snapshot, duration_minutes_snapshot, price_cents_snapshot
+      FROM appointment_services
+      WHERE appointment_id = ${booked.appointmentId}
+    `;
+    expect(snapshot).toEqual({
+      title_snapshot: "Maniküre Test",
+      duration_minutes_snapshot: 45,
+      price_cents_snapshot: 3500,
+    });
+  });
 });

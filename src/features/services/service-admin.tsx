@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { api } from "@/features/booking/api";
 import { formatEuro } from "@/domain/locale";
 import { useSalon } from "@/features/salons/salon-context";
+import { notifyServiceCatalogUpdated } from "@/features/services/service-catalog-sync";
 
 type StaffMember = { id: string; displayName: string };
 type ServiceRow = {
@@ -58,6 +59,7 @@ export function ServiceAdmin() {
       });
       formElement.reset();
       setMessage("Leistung gespeichert.");
+      notifyServiceCatalogUpdated(activeSalon.id, { action: "created" });
       await reload();
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Leistung konnte nicht gespeichert werden.");

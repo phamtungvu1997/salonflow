@@ -38,6 +38,7 @@ export type CalendarAppointmentDetail = {
   startMinute: number;
   endMinute: number;
   version: number;
+  status?: string;
 };
 
 export type CalendarStaffMember = {

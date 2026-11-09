@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 
+import { notifyServiceCatalogUpdated } from "@/features/services/service-catalog-sync";
+
 import {
   type ServiceCategoryRecord,
   type ServiceRecord,
@@ -23,16 +25,11 @@ export function ServicesSettingsSection({
   staff: StaffMemberRecord[];
   onRefresh: () => Promise<void>;
 }) {
+  const [activeSubTab, setActiveSubTab] = useState<"service" | "package">("service");
   const [selectedCategoryId, setSelectedCategoryId] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [createMenuOpen, setCreateMenuOpen] = useState(false);
-  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    categories.slice(0, 2).forEach((c) => {
-      initial[c.id] = true;
-    });
-    return initial;
-  });
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
   // Category Modal State (matching video 02:25 – 02:35 & 02:55)
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
@@ -42,15 +39,25 @@ export function ServicesSettingsSection({
   const [deleteConfirmCategory, setDeleteConfirmCategory] =
     useState<ServiceCategoryRecord | null>(null);
 
-  // Service Modal State (matching video 01:80 – 01:88 & 02:45)
+  // Service Modal State (matching video 00:08 – 00:18 & 01:80 – 01:88)
   const [serviceModalOpen, setServiceModalOpen] = useState(false);
   const [editingService, setEditingService] = useState<ServiceRecord | null>(null);
   const [svcCategoryId, setSvcCategoryId] = useState("");
   const [svcName, setSvcName] = useState("");
   const [svcDuration, setSvcDuration] = useState(60);
   const [svcPriceEuro, setSvcPriceEuro] = useState("45,00");
+  const [svcActive, setSvcActive] = useState(true);
   const [svcStaffIds, setSvcStaffIds] = useState<string[]>([]);
   const [showStaffSelectorInModal, setShowStaffSelectorInModal] = useState(false);
+
+  // Package Modal State (matching video 00:20 – 00:26)
+  const [packageModalOpen, setPackageModalOpen] = useState(false);
+  const [pkgName, setPkgName] = useState("");
+  const [pkgCategoryId, setPkgCategoryId] = useState("");
+  const [pkgDescription, setPkgDescription] = useState("");
+  const [pkgServiceIds, setPkgServiceIds] = useState<string[]>([""]);
+  const [pkgPriceMode, setPkgPriceMode] = useState<"sum" | "custom" | "discount">("sum");
+  const [pkgBookableOnline, setPkgBookableOnline] = useState(true);
 
   // Update Prices Modal State (matching video 01:95)
   const [pricesModalOpen, setPricesModalOpen] = useState(false);
@@ -124,6 +131,7 @@ export function ServicesSettingsSection({
       }
       setCategoryModalOpen(false);
       setEditingCategory(null);
+      notifyServiceCatalogUpdated(salonId, { action: "category" });
       await onRefresh();
     } finally {
       setSaving(false);
@@ -140,6 +148,7 @@ export function ServicesSettingsSection({
       setDeleteConfirmCategory(null);
       setCategoryModalOpen(false);
       setFeedback(`Kategorie „${cat.name}“ wurde gelöscht.`);
+      notifyServiceCatalogUpdated(salonId, { action: "category" });
       await onRefresh();
     } finally {
       setSaving(false);
@@ -153,6 +162,7 @@ export function ServicesSettingsSection({
     setSvcName("");
     setSvcDuration(60);
     setSvcPriceEuro("45,00");
+    setSvcActive(true);
     setSvcStaffIds(staff.filter((s) => s.active).map((s) => s.id));
     setShowStaffSelectorInModal(false);
     setServiceModalOpen(true);
@@ -164,6 +174,7 @@ export function ServicesSettingsSection({
     setSvcName(svc.name);
     setSvcDuration(svc.durationMinutes);
     setSvcPriceEuro((svc.priceCents / 100).toFixed(2).replace(".", ","));
+    setSvcActive(svc.active !== false);
     setSvcStaffIds(svc.staffIds);
     setShowStaffSelectorInModal(false);
     setServiceModalOpen(true);
@@ -183,7 +194,7 @@ export function ServicesSettingsSection({
     const priceCents = parseEuroToCents(svcPriceEuro);
     try {
       if (editingService) {
-        await fetch(`/api/services/${editingService.id}`, {
+        const res = await fetch(`/api/services/${editingService.id}`, {
           method: "PATCH",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -192,14 +203,26 @@ export function ServicesSettingsSection({
             categoryId: svcCategoryId || null,
             durationMinutes: svcDuration,
             priceCents,
+            active: svcActive,
             staffIds: svcStaffIds,
           }),
         });
+        const body = (await res.json().catch(() => ({}))) as {
+          futureAppointmentCount?: number;
+        };
+        const futureNote =
+          !svcActive && (body.futureAppointmentCount ?? 0) > 0
+            ? ` Hinweis: ${body.futureAppointmentCount} bestehende zukünftige Termine bleiben unverändert erhalten.`
+            : "";
         setFeedback(
-          `Leistung „${svcName.trim()}“ wurde aktualisiert (bestehende Termin-Snapshots bleiben unverändert).`,
+          `Leistung „${svcName.trim()}“ wurde aktualisiert (bestehende Termin-Snapshots bleiben unverändert).${futureNote}`,
         );
+        notifyServiceCatalogUpdated(salonId, {
+          serviceId: editingService.id,
+          action: svcActive ? "updated" : "deactivated",
+        });
       } else {
-        await fetch("/api/services", {
+        const res = await fetch("/api/services", {
           method: "POST",
           headers: { "content-type": "application/json" },
           body: JSON.stringify({
@@ -211,10 +234,49 @@ export function ServicesSettingsSection({
             staffIds: svcStaffIds,
           }),
         });
+        const body = (await res.json().catch(() => ({}))) as { serviceId?: string };
         setFeedback(`Leistung „${svcName.trim()}“ wurde angelegt.`);
+        if (svcCategoryId) {
+          setExpandedCategories((prev) => ({ ...prev, [svcCategoryId]: true }));
+        }
+        notifyServiceCatalogUpdated(salonId, {
+          serviceId: body.serviceId,
+          action: "created",
+        });
       }
       setServiceModalOpen(false);
       setEditingService(null);
+      await onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDeactivateService() {
+    if (!editingService) return;
+    setSaving(true);
+    setFeedback(null);
+    try {
+      const res = await fetch(
+        `/api/services/${encodeURIComponent(editingService.id)}?salonId=${encodeURIComponent(salonId)}`,
+        { method: "DELETE" },
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        futureAppointmentCount?: number;
+      };
+      const futureMsg =
+        (body.futureAppointmentCount ?? 0) > 0
+          ? ` ${body.futureAppointmentCount} zukünftige Termine bleiben im Kalender bestehen.`
+          : "";
+      setFeedback(
+        `Leistung „${editingService.name}“ wurde deaktiviert (historische Termine und Snapshots bleiben unverändert).${futureMsg}`,
+      );
+      setServiceModalOpen(false);
+      setEditingService(null);
+      notifyServiceCatalogUpdated(salonId, {
+        serviceId: editingService.id,
+        action: "deactivated",
+      });
       await onRefresh();
     } finally {
       setSaving(false);
@@ -259,6 +321,7 @@ export function ServicesSettingsSection({
       });
       setPricesModalOpen(false);
       setFeedback("Leistungspreise wurden erfolgreich aktualisiert.");
+      notifyServiceCatalogUpdated(salonId, { action: "prices" });
       await onRefresh();
     } finally {
       setSaving(false);
@@ -267,7 +330,7 @@ export function ServicesSettingsSection({
 
   return (
     <div data-testid="settings-section-services" className="space-y-5">
-      {/* Header matching video 01:75 & 02:20 */}
+      {/* Header matching video 00:00 – 00:08 */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-slate-900">Leistungen</h2>
@@ -333,12 +396,36 @@ export function ServicesSettingsSection({
         </div>
       ) : null}
 
-      {/* Filter & Search Toolbar matching video 01:75 */}
+      {/* Filter & Search Toolbar with Service | Package (NEU) switcher matching video 00:00 – 00:26 */}
       <div className="grid gap-3 sm:grid-cols-[auto_220px_1fr]">
         <div className="inline-flex rounded-lg border border-slate-300 bg-white p-0.5">
-          <span className="rounded-md bg-slate-900 px-3 py-1.5 text-xs font-bold text-white">
-            Leistungen ({services.length})
-          </span>
+          <button
+            type="button"
+            data-testid="services-subtab-service"
+            onClick={() => setActiveSubTab("service")}
+            className={`rounded-md px-3 py-1.5 text-xs font-bold transition ${
+              activeSubTab === "service"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            Leistung ({services.length})
+          </button>
+          <button
+            type="button"
+            data-testid="services-subtab-package"
+            onClick={() => setActiveSubTab("package")}
+            className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-bold transition ${
+              activeSubTab === "package"
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:text-slate-900"
+            }`}
+          >
+            <span>Paket</span>
+            <span className="rounded bg-emerald-100 px-1.5 py-0.2 text-[9px] font-extrabold uppercase text-emerald-800">
+              NEU
+            </span>
+          </button>
         </div>
 
         <select
@@ -365,117 +452,355 @@ export function ServicesSettingsSection({
         />
       </div>
 
-      {/* Color-Coded Category Accordion Bars matching video 01:75 & 02:20 */}
-      <div className="space-y-3">
-        {filteredCategories.map((cat) => {
-          const catServices = services.filter((s) => s.categoryId === cat.id);
-          const isExpanded = Boolean(expandedCategories[cat.id]);
-          return (
-            <div
-              key={cat.id}
-              data-testid={`service-category-bar-${cat.name}`}
-              className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs"
-            >
+      {activeSubTab === "package" ? (
+        /* Package Empty State matching video 00:18 – 00:26 */
+        <div
+          data-testid="services-package-empty-state"
+          className="flex flex-col items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-16 text-center shadow-xs"
+        >
+          <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-purple-100 text-2xl">
+            🎁
+          </div>
+          <h3 className="mt-4 text-base font-bold text-slate-900">
+            Leistungen zu einem Paket bündeln
+          </h3>
+          <p className="mt-1.5 max-w-md text-xs leading-relaxed text-slate-500">
+            Gruppieren Sie Leistungen, die Kundinnen häufig zusammen buchen, und legen Sie einen Paketpreis fest. Pakete werden als ein zusammenhängender Termin im Kalender gebucht.
+          </p>
+          <button
+            type="button"
+            data-testid="services-create-package-btn"
+            onClick={() => {
+              setPkgName("");
+              setPkgCategoryId(categories[0]?.id ?? "");
+              setPkgDescription("");
+              setPkgServiceIds([services[0]?.id ?? ""]);
+              setPkgPriceMode("sum");
+              setPkgBookableOnline(true);
+              setPackageModalOpen(true);
+            }}
+            className="mt-5 rounded-lg bg-[#18202c] px-5 py-2.5 text-xs font-bold text-white shadow-xs hover:bg-slate-800"
+          >
+            Paket erstellen
+          </button>
+        </div>
+      ) : (
+        /* Color-Coded Category Accordion Bars matching video 00:00 – 00:17 */
+        <div className="space-y-3">
+          {filteredCategories.map((cat) => {
+            const catServices = services.filter(
+              (s) => s.categoryId === cat.id && !/^Shellac \d{10,}$/.test(s.name),
+            );
+            const isExpanded =
+              Boolean(expandedCategories[cat.id]) || Boolean(searchQuery.trim());
+            return (
               <div
-                onClick={() =>
-                  setExpandedCategories((prev) => ({
-                    ...prev,
-                    [cat.id]: !prev[cat.id],
-                  }))
-                }
-                className="flex items-center justify-between px-4 py-3 cursor-pointer transition"
-                style={{ backgroundColor: `${cat.color}88` }}
+                key={cat.id}
+                data-testid={`service-category-bar-${cat.name}`}
+                className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs"
               >
-                <div className="flex items-center gap-2.5">
-                  <span className="text-sm font-bold text-slate-900">
-                    {cat.name} ({catServices.length})
-                  </span>
+                <div
+                  onClick={() =>
+                    setExpandedCategories((prev) => ({
+                      ...prev,
+                      [cat.id]: !prev[cat.id],
+                    }))
+                  }
+                  className="flex cursor-pointer items-center justify-between px-4 py-3 transition"
+                  style={{ backgroundColor: `${cat.color}88` }}
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-xs text-slate-600 select-none">⋮⋮</span>
+                    <span className="text-sm font-bold text-slate-900">
+                      {cat.name} ({catServices.length})
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      data-testid={`service-category-edit-${cat.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openEditCategoryModal(cat);
+                      }}
+                      className="rounded-md bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-800 hover:bg-white"
+                    >
+                      Kategorie bearbeiten
+                    </button>
+                    <button
+                      type="button"
+                      data-testid={`service-category-add-service-${cat.name}`}
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        openNewServiceModal(cat.id);
+                      }}
+                      className="rounded-md bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-800 hover:bg-white"
+                    >
+                      + Leistung
+                    </button>
+                    <span className="ml-1 text-xs font-bold text-slate-800">
+                      {isExpanded ? "▴" : "▾"}
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    data-testid={`service-category-edit-${cat.name}`}
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openEditCategoryModal(cat);
-                    }}
-                    className="rounded-md bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-800 hover:bg-white"
-                  >
-                    Kategorie bearbeiten
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(event) => {
-                      event.stopPropagation();
-                      openNewServiceModal(cat.id);
-                    }}
-                    className="rounded-md bg-white/80 px-2.5 py-1 text-[11px] font-bold text-slate-800 hover:bg-white"
-                  >
-                    + Leistung
-                  </button>
-                  <span className="ml-1 text-xs font-bold text-slate-800">
-                    {isExpanded ? "▴" : "▾"}
-                  </span>
+
+                {isExpanded ? (
+                  <div className="divide-y divide-slate-100 bg-white">
+                    {catServices.length === 0 ? (
+                      <div className="px-4 py-3 text-xs text-slate-500">
+                        Noch keine Leistungen in dieser Kategorie.
+                      </div>
+                    ) : (
+                      catServices.map((svc) => {
+                        const isInactive = svc.active === false;
+                        return (
+                          <div
+                            key={svc.id}
+                            data-testid={`settings-service-row-${svc.name}`}
+                            onClick={() => openEditServiceModal(svc)}
+                            className={`flex cursor-pointer items-center justify-between px-4 py-3 text-xs hover:bg-slate-50 ${
+                              isInactive ? "opacity-60" : ""
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span
+                                className="h-3 w-3 shrink-0 rounded-full border border-black/15"
+                                style={{ backgroundColor: cat.color }}
+                              />
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <p className="font-bold text-slate-900">{svc.name}</p>
+                                  {isInactive ? (
+                                    <span
+                                      data-testid={`settings-service-inactive-badge-${svc.name}`}
+                                      className="rounded bg-slate-200 px-1.5 py-0.5 text-[10px] font-bold uppercase text-slate-700"
+                                    >
+                                      Deaktiviert
+                                    </span>
+                                  ) : null}
+                                </div>
+                                <p className="text-[11px] text-slate-500">
+                                  {svc.staffIds.length} qualifizierte Mitarbeiterinnen
+                                </p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-5">
+                              <span className="text-slate-600">{svc.durationMinutes} Min.</span>
+                              <span className="w-20 text-right font-bold text-slate-900">
+                                {formatEuroPrice(svc.priceCents)}
+                              </span>
+                              <button
+                                type="button"
+                                data-testid={`settings-service-edit-${svc.name}`}
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  openEditServiceModal(svc);
+                                }}
+                                className="rounded-lg border border-slate-200 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100"
+                              >
+                                Bearbeiten
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })
+                    )}
+                    {/* Inline "+ Create new service for this category" link matching video 00:04 / 00:06 */}
+                    <div className="bg-slate-50/40 px-4 py-2.5">
+                      <button
+                        type="button"
+                        data-testid={`inline-create-service-${cat.name}`}
+                        onClick={() => openNewServiceModal(cat.id)}
+                        className="text-xs font-bold text-sky-700 hover:underline"
+                      >
+                        + Neue Leistung für diese Kategorie erstellen
+                      </button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+
+          {/* Dashed "+ Create category" button matching video 00:02 & 02:20 */}
+          <button
+            type="button"
+            data-testid="services-create-category-dashed-btn"
+            onClick={openNewCategoryModal}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white/60 py-3 text-xs font-bold text-slate-700 transition hover:border-slate-400 hover:bg-white"
+          >
+            <span>+</span>
+            <span>Kategorie erstellen</span>
+          </button>
+        </div>
+      )}
+
+      {/* Create Package Modal matching video 00:20 – 00:24 */}
+      {packageModalOpen ? (
+        <div
+          data-testid="package-editor-modal"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4"
+        >
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+              <h3 className="text-base font-bold text-slate-900">Paket erstellen</h3>
+              <button
+                type="button"
+                onClick={() => setPackageModalOpen(false)}
+                className="text-slate-400 hover:text-slate-700"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 p-6">
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                <h4 className="text-xs font-bold text-slate-900">Details</h4>
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      PAKETNAME *
+                    </label>
+                    <input
+                      type="text"
+                      data-testid="package-modal-name"
+                      value={pkgName}
+                      onChange={(e) => setPkgName(e.target.value)}
+                      placeholder="z. B. Maniküre & Pediküre Kombi"
+                      className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                      KATEGORIE *
+                    </label>
+                    <select
+                      data-testid="package-modal-category"
+                      value={pkgCategoryId}
+                      onChange={(e) => setPkgCategoryId(e.target.value)}
+                      className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+                    >
+                      {categories.map((cat) => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1 block text-[11px] font-bold uppercase text-slate-500">
+                    BESCHREIBUNG
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={pkgDescription}
+                    onChange={(e) => setPkgDescription(e.target.value)}
+                    placeholder="Wird Kundinnen in der Online-Buchung angezeigt"
+                    className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900"
+                  />
                 </div>
               </div>
 
-              {isExpanded ? (
-                <div className="divide-y divide-slate-100 bg-white">
-                  {catServices.length === 0 ? (
-                    <div className="px-4 py-3 text-xs text-slate-500">
-                      Noch keine Leistungen in dieser Kategorie.
-                    </div>
-                  ) : (
-                    catServices.map((svc) => (
-                      <div
-                        key={svc.id}
-                        data-testid={`settings-service-row-${svc.name}`}
-                        onClick={() => openEditServiceModal(svc)}
-                        className="flex items-center justify-between px-4 py-3 text-xs hover:bg-slate-50 cursor-pointer"
-                      >
-                        <div>
-                          <p className="font-bold text-slate-900">{svc.name}</p>
-                          <p className="text-[11px] text-slate-500">
-                            {svc.staffIds.length} qualifizierte Mitarbeiterinnen
-                          </p>
-                        </div>
-                        <div className="flex items-center gap-5">
-                          <span className="text-slate-600">{svc.durationMinutes} Min.</span>
-                          <span className="w-20 text-right font-bold text-slate-900">
-                            {formatEuroPrice(svc.priceCents)}
-                          </span>
-                          <button
-                            type="button"
-                            data-testid={`settings-service-edit-${svc.name}`}
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              openEditServiceModal(svc);
-                            }}
-                            className="rounded-lg border border-slate-200 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100"
-                          >
-                            Bearbeiten
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-              ) : null}
-            </div>
-          );
-        })}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-3">
+                <h4 className="text-xs font-bold text-slate-900">Leistungen</h4>
+                {pkgServiceIds.map((selectedId, idx) => (
+                  <select
+                    key={idx}
+                    value={selectedId}
+                    onChange={(e) =>
+                      setPkgServiceIds((prev) =>
+                        prev.map((item, i) => (i === idx ? e.target.value : item)),
+                      )
+                    }
+                    className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+                  >
+                    <option value="">Leistung auswählen…</option>
+                    {services
+                      .filter((s) => s.active !== false)
+                      .map((svc) => (
+                        <option key={svc.id} value={svc.id}>
+                          {svc.name} ({svc.durationMinutes} Min. · {formatEuroPrice(svc.priceCents)})
+                        </option>
+                      ))}
+                  </select>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => setPkgServiceIds((prev) => [...prev, services[0]?.id ?? ""])}
+                  className="text-xs font-bold text-sky-700 hover:underline"
+                >
+                  + Weitere Leistung hinzufügen
+                </button>
+              </div>
 
-        {/* Dashed "+ Create category" button matching video 02:20 */}
-        <button
-          type="button"
-          data-testid="services-create-category-dashed-btn"
-          onClick={openNewCategoryModal}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-white/60 py-3 text-xs font-bold text-slate-700 transition hover:border-slate-400 hover:bg-white"
-        >
-          <span>+</span>
-          <span>Kategorie erstellen</span>
-        </button>
-      </div>
+              <div className="rounded-xl border border-slate-200 bg-white p-4 space-y-2 text-xs">
+                <h4 className="font-bold text-slate-900">Preisgestaltung</h4>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={pkgPriceMode === "sum"}
+                    onChange={() => setPkgPriceMode("sum")}
+                  />
+                  <span>Einzelpreise der Leistungen summieren</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={pkgPriceMode === "custom"}
+                    onChange={() => setPkgPriceMode("custom")}
+                  />
+                  <span>Festen Paketpreis festlegen</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    checked={pkgPriceMode === "discount"}
+                    onChange={() => setPkgPriceMode("discount")}
+                  />
+                  <span>Prozentualer Rabatt auf den Gesamtpreis</span>
+                </label>
+              </div>
+
+              <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 text-xs">
+                <div>
+                  <p className="font-bold text-slate-900">Online buchbar</p>
+                  <p className="text-[11px] text-slate-500">
+                    Kundinnen buchen das Paket als eine kombinierte Einheit.
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={pkgBookableOnline}
+                  onChange={(e) => setPkgBookableOnline(e.target.checked)}
+                  className="h-4 w-4 rounded accent-[#f28b82]"
+                />
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 border-t border-slate-200 bg-white px-6 py-3.5">
+              <button
+                type="button"
+                data-testid="package-modal-cancel"
+                onClick={() => setPackageModalOpen(false)}
+                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Abbrechen
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setPackageModalOpen(false);
+                  setActiveSubTab("service");
+                }}
+                className="rounded-lg bg-[#18202c] px-5 py-2 text-xs font-bold text-white hover:bg-slate-800"
+              >
+                Speichern
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Category Create / Edit Modal with Live Appointment Card Preview matching video 02:25 – 02:35 */}
       {categoryModalOpen ? (
@@ -597,7 +922,7 @@ export function ServicesSettingsSection({
           data-testid="delete-category-confirm-modal"
           className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4"
         >
-          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md space-y-4 rounded-xl bg-white p-6 shadow-2xl">
             <h4 className="text-base font-bold text-slate-900">
               {deleteConfirmCategory.name} löschen?
             </h4>
@@ -625,7 +950,7 @@ export function ServicesSettingsSection({
         </div>
       ) : null}
 
-      {/* Create / Edit Service Two-Column Modal matching video 01:80 – 01:88 & 02:45 */}
+      {/* Create / Edit Service Two-Column Modal matching video 00:08 – 00:17 & 01:80 */}
       {serviceModalOpen ? (
         <div
           data-testid="service-editor-modal"
@@ -638,6 +963,7 @@ export function ServicesSettingsSection({
               </h3>
               <button
                 type="button"
+                data-testid="service-modal-close"
                 onClick={() => setServiceModalOpen(false)}
                 className="text-slate-400 hover:text-slate-700"
               >
@@ -646,8 +972,8 @@ export function ServicesSettingsSection({
             </div>
 
             <div className="grid flex-1 overflow-y-auto md:grid-cols-[240px_1fr]">
-              {/* Left Summary Sidebar matching video 01:80 */}
-              <div className="border-r border-slate-200 bg-slate-50/70 p-5 space-y-5 text-xs">
+              {/* Left Summary Sidebar matching video 00:10 – 00:15 */}
+              <div className="space-y-5 border-r border-slate-200 bg-slate-50/70 p-5 text-xs">
                 <div>
                   <p className="font-bold text-slate-900">Allgemein</p>
                   <div className="mt-2 space-y-1.5 text-slate-600">
@@ -680,12 +1006,20 @@ export function ServicesSettingsSection({
 
                 <div className="border-t border-slate-200 pt-4">
                   <p className="font-bold text-slate-900">Einstellungen</p>
-                  <p className="mt-1.5 text-slate-600">🌐 Online buchbar</p>
+                  <p className="mt-1.5 text-slate-600">
+                    {svcActive ? "🌐 Aktiv & Buchbar" : "⏸️ Deaktiviert (nur Historie)"}
+                  </p>
                 </div>
               </div>
 
-              {/* Right Form Pane matching video 01:80 */}
-              <div className="p-6 space-y-4">
+              {/* Right Form Pane matching video 00:10 – 00:15 */}
+              <div className="space-y-4 p-6">
+                {/* Snapshot / Historical Integrity Info Banner */}
+                <div className="rounded-lg border border-sky-200 bg-sky-50 px-3.5 py-2.5 text-xs text-sky-950">
+                  Änderungen an Name, Preis, Dauer oder Mitarbeiter-Zuordnung gelten sofort für{" "}
+                  <strong>neue Buchungen</strong> im Kalender. Bestehende Termine behalten ihren historischen Leistungs-Snapshot unverändert.
+                </div>
+
                 <div>
                   <label className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     KATEGORIE *
@@ -741,23 +1075,45 @@ export function ServicesSettingsSection({
                       onChange={(event) => setSvcDuration(Number(event.target.value))}
                       className="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-900"
                     >
-                      {[15, 20, 30, 45, 50, 60, 65, 75, 90, 105, 120].map((mins) => (
-                        <option key={mins} value={mins}>
-                          {mins} Min.
-                        </option>
-                      ))}
+                      {[15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 90, 105, 120].map(
+                        (mins) => (
+                          <option key={mins} value={mins}>
+                            {mins} Min.
+                          </option>
+                        ),
+                      )}
                     </select>
                   </div>
                 </div>
 
+                {/* Active / Deactivated Status Toggle */}
+                {editingService ? (
+                  <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-xs">
+                    <div>
+                      <p className="font-bold text-slate-900">Für neue Buchungen aktiv</p>
+                      <p className="text-[11px] text-slate-500">
+                        Wenn deaktiviert, erscheint die Leistung nicht mehr im Termin-Erstellen-Dialog. Bestehende Termine bleiben erhalten.
+                      </p>
+                    </div>
+                    <input
+                      type="checkbox"
+                      data-testid="service-modal-active-toggle"
+                      checked={svcActive}
+                      onChange={(e) => setSvcActive(e.target.checked)}
+                      className="h-4 w-4 rounded accent-[#f28b82]"
+                    />
+                  </div>
+                ) : null}
+
                 {/* Qualified Staff Selector */}
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2.5">
+                <div className="space-y-2.5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-bold text-slate-900">
                       Verfügbare Mitarbeiterinnen ({svcStaffIds.length})
                     </span>
                     <button
                       type="button"
+                      data-testid="service-modal-toggle-all-staff"
                       onClick={() =>
                         setSvcStaffIds(
                           svcStaffIds.length === staff.filter((s) => s.active).length
@@ -772,11 +1128,16 @@ export function ServicesSettingsSection({
                   </div>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                     {staff
-                      .filter((s) => s.active)
+                      .filter(
+                        (s) =>
+                          s.active &&
+                          !s.displayName.startsWith("Test ") &&
+                          !s.displayName.startsWith("Archiv "),
+                      )
                       .map((member) => (
                         <label
                           key={member.id}
-                          className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800 cursor-pointer"
+                          className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs text-slate-800"
                         >
                           <input
                             type="checkbox"
@@ -801,23 +1162,39 @@ export function ServicesSettingsSection({
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 border-t border-slate-200 bg-slate-50 px-6 py-3.5">
-              <button
-                type="button"
-                onClick={() => setServiceModalOpen(false)}
-                className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-              >
-                Abbrechen
-              </button>
-              <button
-                type="button"
-                data-testid="service-modal-save"
-                disabled={saving || !svcName.trim() || svcStaffIds.length === 0}
-                onClick={() => void handleSaveService()}
-                className="rounded-lg bg-[#18202c] px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
-              >
-                {saving ? "Speichert…" : "Speichern"}
-              </button>
+            <div className="flex items-center justify-between border-t border-slate-200 bg-slate-50 px-6 py-3.5">
+              <div>
+                {editingService && svcActive ? (
+                  <button
+                    type="button"
+                    data-testid="service-modal-deactivate-btn"
+                    disabled={saving}
+                    onClick={() => void handleDeactivateService()}
+                    className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50"
+                  >
+                    Leistung deaktivieren
+                  </button>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  data-testid="service-modal-cancel"
+                  onClick={() => setServiceModalOpen(false)}
+                  className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Abbrechen
+                </button>
+                <button
+                  type="button"
+                  data-testid="service-modal-save"
+                  disabled={saving || !svcName.trim() || svcStaffIds.length === 0}
+                  onClick={() => void handleSaveService()}
+                  className="rounded-lg bg-[#18202c] px-5 py-2 text-xs font-bold text-white hover:bg-slate-800 disabled:opacity-50"
+                >
+                  {saving ? "Speichert…" : "Speichern"}
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -841,7 +1218,7 @@ export function ServicesSettingsSection({
               </button>
             </div>
 
-            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+            <div className="flex-1 space-y-4 overflow-y-auto p-6">
               {/* Bulk adjustment bar matching video 01:95 */}
               <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
                 <div className="flex items-center gap-2 text-xs">

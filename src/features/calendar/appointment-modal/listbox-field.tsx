@@ -5,7 +5,15 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
-export type ListboxOption = { id: string; label: string; hint?: string; disabled?: boolean };
+export type ListboxOption = {
+  id: string;
+  label: string;
+  hint?: string;
+  secondaryHint?: string;
+  groupLabel?: string;
+  groupColor?: string;
+  disabled?: boolean;
+};
 
 export function ListboxField({
   label,
@@ -35,8 +43,11 @@ export function ListboxField({
   const searchRef = useRef<HTMLInputElement>(null);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
-  const filtered = options.filter((option) =>
-    option.label.toLocaleLowerCase("de").includes(query.trim().toLocaleLowerCase("de")),
+  const filtered = options.filter(
+    (option) =>
+      option.label.toLocaleLowerCase("de").includes(query.trim().toLocaleLowerCase("de")) ||
+      (option.groupLabel &&
+        option.groupLabel.toLocaleLowerCase("de").includes(query.trim().toLocaleLowerCase("de"))),
   );
 
   useEffect(() => {
@@ -56,6 +67,8 @@ export function ListboxField({
     onOpenChange(false);
     buttonRef.current?.focus();
   }
+
+  let lastGroup: string | undefined;
 
   return (
     <div className="min-w-0">
@@ -79,8 +92,15 @@ export function ListboxField({
           }
         }}
       >
-        <span className={cn("truncate", !valueLabel && "text-[#98a0aa]")}>{valueLabel || placeholder}</span>
-        <ChevronDown className={cn("h-4 w-4 shrink-0 text-[#8b919a] motion-safe:transition-transform motion-safe:duration-150", open && "rotate-180")} />
+        <span className={cn("truncate", !valueLabel && "text-[#98a0aa]")}>
+          {valueLabel || placeholder}
+        </span>
+        <ChevronDown
+          className={cn(
+            "h-4 w-4 shrink-0 text-[#8b919a] motion-safe:transition-transform motion-safe:duration-150",
+            open && "rotate-180",
+          )}
+        />
       </button>
       {open && rect ? (
         <div
@@ -88,8 +108,13 @@ export function ListboxField({
           role="listbox"
           aria-label={label}
           data-testid={`${testId}-list`}
-          className="z-50 max-h-64 overflow-auto rounded-lg border border-[#e1e4ea] bg-white py-1 shadow-lg"
-          style={{ position: "fixed", top: rect.bottom + 4, left: rect.left, width: rect.width }}
+          className="z-50 max-h-72 overflow-auto rounded-lg border border-[#e1e4ea] bg-white py-1 shadow-lg"
+          style={{
+            position: "fixed",
+            top: rect.bottom + 4,
+            left: rect.left,
+            width: Math.max(rect.width, 320),
+          }}
         >
           {searchable ? (
             <div className="px-2 pb-1">
@@ -102,6 +127,7 @@ export function ListboxField({
                 }}
                 placeholder="Suchen"
                 aria-label={`${label} suchen`}
+                data-testid={`${testId}-search`}
                 className="h-8 w-full rounded-md border border-[#e1e4ea] px-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]"
                 onKeyDown={(event) => {
                   if (event.key === "ArrowDown") {
@@ -123,25 +149,66 @@ export function ListboxField({
               />
             </div>
           ) : null}
-          {filtered.length === 0 ? <p className="px-3 py-2 text-sm text-[#8b919a]">Keine Treffer.</p> : null}
-          {filtered.map((option, index) => (
-            <button
-              key={option.id}
-              type="button"
-              role="option"
-              aria-selected={option.label === valueLabel}
-              disabled={option.disabled}
-              className={cn(
-                "flex w-full items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-[#f4f5f7] focus-visible:bg-[#f4f5f7] focus-visible:outline-none disabled:cursor-not-allowed disabled:text-[#b0b6be]",
-                index === active && "bg-[#f4f5f7]",
-              )}
-              onMouseEnter={() => setActive(index)}
-              onClick={() => choose(index)}
-            >
-              <span className="truncate">{option.label}</span>
-              {option.hint ? <span className="ml-2 shrink-0 text-xs text-[#8b919a]">{option.hint}</span> : null}
-            </button>
-          ))}
+          {filtered.length === 0 ? (
+            <p className="px-3 py-2 text-sm text-[#8b919a]">Keine Treffer.</p>
+          ) : null}
+          {filtered.map((option, index) => {
+            const showGroupHeader =
+              option.groupLabel && option.groupLabel !== lastGroup;
+            if (option.groupLabel) {
+              lastGroup = option.groupLabel;
+            }
+            return (
+              <div key={option.id}>
+                {showGroupHeader ? (
+                  <div
+                    role="presentation"
+                    aria-hidden="true"
+                    className="flex items-center gap-1.5 border-t border-[#f0f2f5] bg-[#fafbfc] px-3 py-1 text-[10px] font-bold uppercase tracking-[0.05em] text-[#6d7480] first:border-t-0"
+                  >
+                    {option.groupColor ? (
+                      <span
+                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: option.groupColor }}
+                      />
+                    ) : null}
+                    <span className="truncate">{option.groupLabel}</span>
+                  </div>
+                ) : null}
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={option.label === valueLabel}
+                  disabled={option.disabled}
+                  className={cn(
+                    "flex w-full items-center justify-between px-3 py-1.5 text-left text-sm hover:bg-[#f4f5f7] focus-visible:bg-[#f4f5f7] focus-visible:outline-none disabled:cursor-not-allowed disabled:text-[#b0b6be]",
+                    index === active && "bg-[#f4f5f7]",
+                  )}
+                  onMouseEnter={() => setActive(index)}
+                  onClick={() => choose(index)}
+                >
+                  <span className="flex min-w-0 items-center gap-2 truncate">
+                    {option.groupColor ? (
+                      <span
+                        aria-hidden="true"
+                        className="h-2.5 w-2.5 shrink-0 rounded-[2px]"
+                        style={{ backgroundColor: option.groupColor }}
+                      />
+                    ) : null}
+                    <span className="truncate">{option.label}</span>
+                  </span>
+                  <span className="ml-2 flex shrink-0 items-center gap-2 text-xs text-[#6d7480]">
+                    {option.hint ? <span>{option.hint}</span> : null}
+                    {option.secondaryHint ? (
+                      <span aria-hidden="true" className="font-semibold text-[#1c1e21]">
+                        {option.secondaryHint}
+                      </span>
+                    ) : null}
+                  </span>
+                </button>
+              </div>
+            );
+          })}
         </div>
       ) : null}
     </div>
