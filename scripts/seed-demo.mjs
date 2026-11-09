@@ -287,5 +287,89 @@ for (const [id, staffId, startsAt, endsAt, reason] of demoAbsences) {
   `;
 }
 
+// Seed Marketing Settings, Discount Codes, Dynamic Price Changes, Waiting List & Filter Groups
+for (const sId of ["salon_jeannie", "salon_juliet", "salon_heide"]) {
+  await sql`
+    INSERT INTO salon_marketing_settings (salon_id)
+    VALUES (${sId})
+    ON CONFLICT (salon_id) DO NOTHING
+  `;
+}
+
+await sql`DELETE FROM price_change_rules WHERE id NOT LIKE 'pcr_demo_%'`.catch(() => {});
+await sql`DELETE FROM discount_codes WHERE id NOT LIKE 'dcode_demo_%'`.catch(() => {});
+await sql`DELETE FROM waiting_list_entries WHERE id NOT LIKE 'wait_demo_%'`.catch(() => {});
+
+const demoDiscountCodes = [
+  ["dcode_demo_1", "SPRING15", "special_events", 15, 2, true],
+  ["dcode_demo_2", "HOLIDAY15", "holidays", 15, 5, true],
+  ["dcode_demo_3", "NEUKUNDIN10", "new_customers", 10, 8, true],
+  ["dcode_demo_4", "MEGA20", "other", 20, 1, true],
+  ["dcode_demo_5", "HERBST25", "holidays", 25, 0, false],
+];
+for (const [id, code, dtype, pct, usedCount, enabled] of demoDiscountCodes) {
+  await sql`
+    INSERT INTO discount_codes (id, salon_id, code, discount_type, percentage, used_count, enabled)
+    VALUES (${id}, ${salonId}, ${code}, ${dtype}, ${pct}, ${usedCount}, ${enabled})
+    ON CONFLICT (id) DO UPDATE SET
+      code = EXCLUDED.code,
+      discount_type = EXCLUDED.discount_type,
+      percentage = EXCLUDED.percentage,
+      used_count = EXCLUDED.used_count,
+      enabled = EXCLUDED.enabled
+  `;
+}
+
+const demoPriceChanges = [
+  ["pcr_demo_mon", "discount", 13, "2026-11-09T10:00:00+01:00", "2026-11-09T19:00:00+01:00", true, "weekly"],
+  ["pcr_demo_tue", "discount", 13, "2026-11-10T09:00:00+01:00", "2026-11-10T19:00:00+01:00", true, "weekly"],
+  ["pcr_demo_wed", "discount", 13, "2026-11-11T09:00:00+01:00", "2026-11-11T19:00:00+01:00", true, "weekly"],
+  ["pcr_demo_thu", "discount", 13, "2026-11-12T09:00:00+01:00", "2026-11-12T19:00:00+01:00", true, "weekly"],
+  ["pcr_demo_fri", "discount", 13, "2026-11-13T09:00:00+01:00", "2026-11-13T19:00:00+01:00", true, "weekly"],
+  ["pcr_demo_sat", "discount", 13, "2026-11-14T09:00:00+01:00", "2026-11-14T18:00:00+01:00", true, "weekly"],
+];
+for (const [id, ctype, pct, startsAt, endsAt, rep, freq] of demoPriceChanges) {
+  await sql`
+    INSERT INTO price_change_rules (id, salon_id, change_type, percentage, starts_at, ends_at, repeat_enabled, repeat_frequency)
+    VALUES (${id}, ${salonId}, ${ctype}, ${pct}, ${startsAt}, ${endsAt}, ${rep}, ${freq})
+    ON CONFLICT (id) DO UPDATE SET
+      change_type = EXCLUDED.change_type,
+      percentage = EXCLUDED.percentage,
+      starts_at = EXCLUDED.starts_at,
+      ends_at = EXCLUDED.ends_at
+  `;
+}
+
+const demoWaitlist = [
+  ["wait_demo_1", "cust_klara", "Klara Beispiel", "svc_shellac", "Shellac French / Babyboomer", 65, "staff_lena", "Lena Berger", "weekdays", "Mo, Mi, Do", "Bitte ab 14:00 Uhr", true],
+  ["wait_demo_2", "cust_amira", "Amira Büchel", "svc_biab", "BIAB Naturnagelverstärkung", 60, "staff_julia", "Julia Krüger", "specific_date", "2026-11-09", "Kurzfristig erreichbar", false],
+  ["wait_demo_3", "cust_sophie", "Sophie Wagner", "svc_pedi", "Spa Pediküre mit Fußmassage", 75, "staff_emma", "Emma Wolf", "weekdays", "Fr, Sa", null, false],
+  ["wait_demo_4", "cust_nora", "Nora Hartmann", "svc_mani", "Maniküre mit Nagellack", 50, null, "Keine Präferenz", "specific_date", "2026-11-10", null, false],
+];
+for (const [id, custId, custName, svcId, svcName, dur, stId, stName, dMode, prefDate, note, sent] of demoWaitlist) {
+  await sql`
+    INSERT INTO waiting_list_entries (
+      id, salon_id, customer_id, customer_name, service_id, service_name,
+      duration_minutes, staff_id, staff_name, date_mode, preferred_date, note, notification_sent
+    ) VALUES (
+      ${id}, ${salonId}, ${custId}, ${custName}, ${svcId}, ${svcName},
+      ${dur}, ${stId}, ${stName}, ${dMode}, ${prefDate}, ${note}, ${sent}
+    )
+    ON CONFLICT (id) DO NOTHING
+  `;
+}
+
+const demoFilterGroups = [
+  ["mfilter_demo_1", "Höchster Umsatz (Top-Kundinnen)", 1, "Gesamtumsatz > 150 €"],
+  ["mfilter_demo_2", "Stammkundinnen (Favoriten)", 2, "Label = Favorit & >= 2 Besuche"],
+];
+for (const [id, name, fUsed, criteria] of demoFilterGroups) {
+  await sql`
+    INSERT INTO marketing_filter_groups (id, salon_id, name, filters_used, criteria_label)
+    VALUES (${id}, ${salonId}, ${name}, ${fUsed}, ${criteria})
+    ON CONFLICT (id) DO NOTHING
+  `;
+}
+
 await sql.end();
 console.log("seeded fictional Jeannie day roster (Mon–Sat 09:00–19:00; Emma Sunday 13:00–18:45)");
