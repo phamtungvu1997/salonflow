@@ -61,6 +61,23 @@ async function assertBookableWindow(
       "Außerhalb der Arbeitszeit oder in einer Pause.",
     );
   }
+
+  const overlappingAbsences = await tx<{ id: string }[]>`
+    SELECT id
+    FROM absences
+    WHERE staff_id = ${staffId}
+      AND salon_id = ${salonId}
+      AND starts_at < ${end}
+      AND ends_at > ${start}
+    LIMIT 1
+  `;
+  if (overlappingAbsences.length > 0) {
+    throw new BookingError(
+      422,
+      "absent",
+      "Mitarbeiter ist in diesem Zeitraum als abwesend eingetragen.",
+    );
+  }
 }
 
 export async function listSalonStaffColumns(sql: Db, salonId: string) {

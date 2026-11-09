@@ -1047,8 +1047,10 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       {selected ? (
         <AppointmentDetailPopover
           appointment={selected}
+          salonId={activeSalon?.id ?? "salon_jeannie"}
           date={date}
           staff={staff}
+          services={services}
           anchorRect={selectedAnchor}
           onClose={() => setSelected(null)}
           onUpdated={async (msg) => {

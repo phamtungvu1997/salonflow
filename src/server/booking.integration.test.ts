@@ -437,4 +437,36 @@ describe.skipIf(!process.env.DATABASE_URL)("NS-017 booking engine", () => {
       price_cents_snapshot: 3500,
     });
   });
+
+  it("IT-10 rejects booking during an employee absence and retains allocation on no_show", async () => {
+    const sql = getSql();
+    const staffId = await makeStaff(salonA);
+    const serviceId = await makeService(salonA, staffId, 60);
+    const customerId = await makeCustomer(salonA);
+
+    // Insert an absence from 11:00 to 12:00 on Monday
+    await sql`
+      INSERT INTO absences (id, staff_id, salon_id, starts_at, ends_at, reason)
+      VALUES (
+        ${`abs_${randomUUID()}`},
+        ${staffId},
+        ${salonA},
+        ${zonedDateTimeToUtc(monday, "11:00")},
+        ${zonedDateTimeToUtc(monday, "12:00")},
+        'Pause / Arzttermin'
+      )
+    `;
+
+    // Booking overlapping the absence (11:00 - 12:00) must be rejected with 422 "absent"
+    await expect(
+      createAppointment(sql, actor, {
+        salonId: salonA,
+        staffId,
+        customerId,
+        serviceId,
+        date: monday,
+        start: "11:00",
+      }),
+    ).rejects.toMatchObject({ status: 422, code: "absent" });
+  });
 });
