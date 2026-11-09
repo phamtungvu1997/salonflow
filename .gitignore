@@ -16,6 +16,16 @@
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+/artifacts/
+
+# raw reference screenshots and video recordings (never commit unredacted captures)
+docs/references/salonized/*.png
+docs/references/salonized/*.jpg
+docs/discovery/screenshots/*.png
+docs/discovery/screenshots/*.jpg
+*.mp4
+*.mov
+*.webm
 
 # next.js
 /.next/
@@ -36,6 +46,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # local embedded PostgreSQL cluster
 /.pgdata/

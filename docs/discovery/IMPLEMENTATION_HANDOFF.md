@@ -212,8 +212,10 @@ Reason: the vertical slice engine already exists on PR #1; discovery confirms th
 
 ## 9. Immediate coordinator actions (no redesign)
 
-1. Owner: approve UI-01…UI-07.  
-2. Engineering: NS-017-CI lockfile fix on `feat/ns-017-booking-workflow`.  
-3. Commit discovery docs when Owner wants them on the branch (currently untracked).  
+1. Owner: approve UI-01…UI-07. **Done 2026-11-08.**  
+2. Engineering: NS-017-CI lockfile fix on `feat/ns-017-booking-workflow`. **CI green; await Owner merge.**  
+3. Commit discovery docs when Owner wants them on the branch (currently largely untracked).  
 4. Do not merge PR #1 or #2 to `main` without Owner.  
-5. After A green → open NS-008 implementation branch from updated base.
+5. After A green → open NS-008 implementation branch from updated base.  
+6. Interaction/motion extension: [`UI_INTERACTION_AND_MOTION_SPEC.md`](UI_INTERACTION_AND_MOTION_SPEC.md) + [`INTERACTION_COVERAGE_MATRIX.md`](INTERACTION_COVERAGE_MATRIX.md) — hand to UI/UX + Frontend for NS-008 (familiar motion, not clones).  
+7. Frontend implementation brief (docs-only): [`NS-008_FRONTEND_IMPLEMENTATION_BRIEF.md`](NS-008_FRONTEND_IMPLEMENTATION_BRIEF.md) — component tree, motion tokens, IX-01…05 selectors, SF-020/409 risks, Salonized non-copy list.

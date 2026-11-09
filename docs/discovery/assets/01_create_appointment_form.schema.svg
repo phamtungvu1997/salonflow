@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="560" viewBox="0 0 920 560" role="img" aria-labelledby="title desc">
+  <title id="title">Redacted Create Appointment layout</title>
+  <desc id="desc">Schematic of Salonized Create appointment modal observed 2026-11-08. No customer data.</desc>
+  <rect width="920" height="560" fill="#e8ebef"/>
+  <rect x="60" y="30" width="800" height="500" rx="8" fill="#ffffff" stroke="#c5ccd6"/>
+  <text x="80" y="58" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#1b2430">Create appointment</text>
+  <rect x="280" y="40" width="360" height="28" rx="6" fill="#f3f5f7" stroke="#d7dde5"/>
+  <text x="300" y="59" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#1b2430">Appointment | Absence | Chore | Note</text>
+  <rect x="80" y="90" width="520" height="150" rx="6" fill="#fafbfc" stroke="#d7dde5"/>
+  <text x="96" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#1b2430">Services</text>
+  <rect x="96" y="124" width="180" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="106" y="145" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">SERVICE * Select</text>
+  <rect x="286" y="124" width="90" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="296" y="145" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">DURATION</text>
+  <rect x="386" y="124" width="180" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="396" y="145" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">EMPLOYEE * Select</text>
+  <text x="96" y="185" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#98a2b3">Popular services: [redacted service chips]</text>
+  <text x="96" y="215" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#2f6fed">+ Add another service</text>
+  <rect x="80" y="255" width="520" height="120" rx="6" fill="#fafbfc" stroke="#d7dde5"/>
+  <text x="96" y="277" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#1b2430">Date and time</text>
+  <rect x="96" y="290" width="160" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="106" y="311" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">Date picker</text>
+  <rect x="266" y="290" width="80" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="276" y="311" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">Time</text>
+  <rect x="356" y="290" width="140" height="34" rx="4" fill="#eef2f6" stroke="#c5ccd6"/>
+  <text x="366" y="311" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1b2430">Find availabilities</text>
+  <text x="96" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#2f6fed">+ Add another date</text>
+  <text x="280" y="350" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">Repeat appointment [toggle]</text>
+  <rect x="80" y="390" width="520" height="110" rx="6" fill="#fafbfc" stroke="#d7dde5"/>
+  <text x="96" y="412" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#1b2430">Note</text>
+  <rect x="96" y="424" width="480" height="56" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="106" y="455" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#98a2b3">Write your note here</text>
+  <rect x="620" y="90" width="220" height="410" rx="6" fill="#fafbfc" stroke="#d7dde5"/>
+  <text x="636" y="112" font-family="Segoe UI, Arial, sans-serif" font-size="13" font-weight="600" fill="#1b2430">Customer</text>
+  <rect x="636" y="124" width="188" height="34" rx="4" fill="#fff" stroke="#c5ccd6"/>
+  <text x="646" y="145" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#98a2b3">Search customer</text>
+  <text x="636" y="175" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#2f6fed">+ Add new customer</text>
+  <text x="636" y="220" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#98a2b3">[no customer selected]</text>
+  <text x="636" y="420" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#667085">DATE AND TIME summary</text>
+  <text x="636" y="440" font-family="Segoe UI, Arial, sans-serif" font-size="10" fill="#667085">PRICE summary</text>
+  <rect x="636" y="455" width="188" height="34" rx="4" fill="#1b2430"/>
+  <text x="668" y="476" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#ffffff">Create appointment</text>
+</svg>
