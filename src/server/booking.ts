@@ -7,6 +7,7 @@ import {
   zonedDateTimeToUtc,
 } from "./time";
 import type { Db } from "./db";
+import { recordOutbox } from "./outbox";
 
 type ShiftRow = { start_minute: number; end_minute: number };
 
@@ -106,18 +107,6 @@ function requestFingerprint(input: {
   start: string;
 }) {
   return [input.staffId, input.customerId, input.serviceId, input.date, input.start].join("|");
-}
-
-async function recordOutbox(
-  tx: Db,
-  salonId: string,
-  aggregateId: string,
-  eventType: string,
-) {
-  await tx`
-    INSERT INTO outbox_events (id, salon_id, aggregate_id, event_type)
-    VALUES (${`out_${crypto.randomUUID()}`}, ${salonId}, ${aggregateId}, ${eventType})
-  `;
 }
 
 export async function createAppointment(

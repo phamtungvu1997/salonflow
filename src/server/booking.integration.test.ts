@@ -7,7 +7,7 @@ import {
   listSalonStaffColumns,
   rescheduleAppointment,
 } from "./booking";
-import { getSql } from "./db";
+import { closeSql, getSql } from "./db";
 import { BookingError, zonedDateTimeToUtc } from "./time";
 
 const salonA = "salon_jeannie";
@@ -90,7 +90,7 @@ describe.skipIf(!process.env.DATABASE_URL)("NS-017 booking engine", () => {
   });
 
   afterAll(async () => {
-    await getSql().end({ timeout: 1 });
+    await closeSql();
   });
 
   it("IT-01 assigns staff to one salon without creating a login", async () => {

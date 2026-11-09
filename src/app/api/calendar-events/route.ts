@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assertSalon, requireUser } from "@/server/auth";
 import { getSql } from "@/server/db";
 import { apiError } from "@/server/http";
+import { recordOutbox } from "@/server/outbox";
 import { addDays, BookingError, zonedDateTimeToUtc } from "@/server/time";
 
 const createEventSchema = z.object({
@@ -72,10 +73,11 @@ export async function POST(request: Request) {
         )
       `;
       if (data.kind === "absence" && targetStaffId) {
+        const absenceId = `abs_${crypto.randomUUID()}`;
         await tx`
           INSERT INTO absences (id, staff_id, salon_id, starts_at, ends_at, reason)
           VALUES (
-            ${`abs_${crypto.randomUUID()}`},
+            ${absenceId},
             ${targetStaffId},
             ${data.salonId},
             ${startAt},
@@ -83,7 +85,10 @@ export async function POST(request: Request) {
             ${data.description}
           )
         `;
+        await recordOutbox(tx, data.salonId, absenceId, "absence.created");
       }
+      // Always invalidate peers for board-visible calendar events (chore/note/company absence).
+      await recordOutbox(tx, data.salonId, eventId, `calendar_event.${data.kind}`);
     });
 
     return Response.json({ eventId }, { status: 201 });

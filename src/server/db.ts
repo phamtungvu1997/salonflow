@@ -14,3 +14,11 @@ export function getSql(): postgres.Sql {
   }
   return globalForSql.salonflowSql;
 }
+
+/** Close the shared client so another suite (or process exit) can reopen cleanly. */
+export async function closeSql() {
+  if (!globalForSql.salonflowSql) return;
+  const client = globalForSql.salonflowSql;
+  globalForSql.salonflowSql = undefined;
+  await client.end({ timeout: 1 });
+}

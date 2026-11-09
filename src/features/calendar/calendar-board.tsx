@@ -42,6 +42,7 @@ import {
   DragAvailabilityConfirmModal,
   type DragAvailabilityWarningState,
 } from "@/features/calendar/drag-availability-confirm-modal";
+import { useSalonLiveUpdates } from "@/features/calendar/use-salon-live-updates";
 import { useSalon } from "@/features/salons/salon-context";
 import { subscribeServiceCatalogUpdates } from "@/features/services/service-catalog-sync";
 import { cn } from "@/lib/utils";
@@ -238,6 +239,26 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSalon?.id, date, viewMode]);
+
+  const dragBusyRef = useRef(false);
+  dragBusyRef.current = Boolean(activeDrag || dragSaving || dragWarning);
+  const pendingLiveReloadRef = useRef(false);
+
+  const liveStatus = useSalonLiveUpdates(activeSalon?.id, () => {
+    if (dragBusyRef.current) {
+      pendingLiveReloadRef.current = true;
+      return;
+    }
+    void reload().catch(() => {});
+  });
+
+  useEffect(() => {
+    if (activeDrag || dragSaving || dragWarning) return;
+    if (!pendingLiveReloadRef.current) return;
+    pendingLiveReloadRef.current = false;
+    void reload().catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeDrag, dragSaving, dragWarning, activeSalon?.id, date, viewMode]);
 
   useEffect(() => {
     if (!openDropdown) return;
@@ -650,6 +671,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     <div
       data-testid="calendar-board"
       data-drag-saving={dragSaving ? "true" : "false"}
+      data-live-status={liveStatus}
       className="flex min-h-0 flex-1 flex-col"
     >
       {/* Top Calendar title + gear & filter icons */}

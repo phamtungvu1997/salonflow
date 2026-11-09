@@ -4,7 +4,10 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/server/booking.integration.test.ts"],
+    include: [
+      "src/server/booking.integration.test.ts",
+      "src/server/events.integration.test.ts",
+    ],
   },
   resolve: {
     alias: {

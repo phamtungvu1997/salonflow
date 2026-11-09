@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assertSalon, canManageSalon, requireUser } from "@/server/auth";
 import { getSql } from "@/server/db";
 import { apiError } from "@/server/http";
+import { recordOutbox } from "@/server/outbox";
 import { addDays, BookingError, zonedDateTimeToUtc } from "@/server/time";
 
 const GERMAN_NATIONAL_HOLIDAYS_2026 = [
@@ -128,6 +129,7 @@ export async function POST(request: Request) {
           INSERT INTO absences (id, staff_id, salon_id, starts_at, ends_at, reason)
           VALUES (${absenceId}, ${staffId}, ${data.salonId}, ${startsAt}, ${endsAt}, ${data.description})
         `;
+        await recordOutbox(tx, data.salonId, absenceId, "absence.created");
       }
       await tx`
         INSERT INTO calendar_events (
@@ -197,6 +199,7 @@ export async function DELETE(request: Request) {
             AND start_at = ${existing[0].starts_at}
             AND end_at = ${existing[0].ends_at}
         `.catch(() => {});
+        await recordOutbox(tx, salonId, id, "absence.deleted");
       }
     });
 
