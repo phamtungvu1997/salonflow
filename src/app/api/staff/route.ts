@@ -48,7 +48,8 @@ export async function GET(request: Request) {
         (s.active AND a.active) AS active
       FROM staff s
       JOIN staff_salon_assignments a ON a.staff_id = s.id AND a.salon_id = ${salonId}
-      WHERE (${includeInactive} OR (s.active AND a.active))
+      WHERE s.display_name !~ '^Test '
+        AND (${includeInactive} OR (s.active AND a.active))
       ORDER BY s.sort_order ASC, s.display_name ASC
     `;
     const shifts = await sql<{

@@ -3,8 +3,7 @@ import { expect, test } from "@playwright/test";
 const routes = [
   { path: "/kalender", testId: "page-kalender", label: "Kalender" },
   { path: "/kunden", testId: "page-kunden", label: "Kunden" },
-  { path: "/mitarbeiter", testId: "page-mitarbeiter", label: "Mitarbeiter" },
-  { path: "/leistungen", testId: "page-leistungen", label: "Leistungen" },
+  { path: "/marketing", testId: "page-marketing", label: "Marketing" },
   { path: "/einstellungen", testId: "page-einstellungen", label: "Einstellungen" },
 ] as const;
 
@@ -26,6 +25,14 @@ test.describe("Hauptnavigation", () => {
       }
     });
   }
+
+  test("zeigt keine doppelten Mitarbeiter- oder Leistungen-Einträge in der Hauptnavigation", async ({
+    page,
+  }) => {
+    await page.goto("/kalender");
+    await expect(page.getByTestId("nav-mitarbeiter")).toHaveCount(0);
+    await expect(page.getByTestId("nav-leistungen")).toHaveCount(0);
+  });
 
   test("kann Seitenleiste einklappen", async ({ page }) => {
     await page.goto("/kalender");

@@ -11,28 +11,41 @@ test("Buchung bleibt nach dem Neuladen und Storno gibt die Zeit frei", async ({ 
   await page.getByTestId("login-submit").click();
   await expect(page.getByTestId("calendar-board")).toBeVisible();
 
-  await page.getByTestId("nav-mitarbeiter").click();
-  await page.getByTestId("staff-name").fill(staffName);
-  await page.getByTestId("staff-create").click();
-  await expect(page.getByTestId(`staff-row-${staffName}`)).toBeVisible();
-  await page.getByTestId("staff-select").selectOption({ label: staffName });
-  await page.getByTestId("shift-start-1").fill("09:00");
-  await page.getByTestId("shift-end-1").fill("18:00");
-  await page.getByTestId("hours-save").click();
-  await expect(page.getByTestId("staff-message")).toContainText("Arbeitszeiten gespeichert");
+  // Create staff member via Settings -> Employees
+  await page.getByTestId("nav-einstellungen").click();
+  await page.getByTestId("settings-nav-employees").click();
+  await page.getByTestId("settings-new-employee-btn").click();
+  await page.getByTestId("employee-modal-name").fill(staffName);
+  await page.getByTestId("employee-modal-save").click();
+  await expect(page.getByTestId(`settings-employee-row-${staffName}`)).toBeVisible();
 
-  await page.getByTestId("nav-leistungen").click();
-  await page.getByTestId("service-name").fill(serviceName);
-  await page.getByTestId("service-duration").fill("45");
-  await page.getByRole("checkbox", { name: staffName }).check();
-  await page.getByTestId("service-create").click();
-  await expect(page.getByTestId(`service-row-${serviceName}`)).toBeVisible();
+  // Set Monday working hours (09:00 - 18:00) via Settings -> Timetable
+  await page.getByTestId("settings-nav-timetable").click();
+  await page.getByTestId(`timetable-cell-${staffName}-1`).click();
+  await page.getByTestId("roster-modal-start").fill("09:00");
+  await page.getByTestId("roster-modal-end").fill("18:00");
+  await page.getByTestId("roster-modal-submit").click();
+  await expect(page.getByTestId("timetable-feedback-banner")).toContainText("gespeichert");
+
+  // Create service and assign staff member via Settings -> Services
+  await page.getByTestId("settings-nav-services").click();
+  await page.getByTestId("services-create-new-dropdown-btn").click();
+  await page.getByTestId("services-menu-add-service").click();
+  await page.getByTestId("service-modal-name").fill(serviceName);
+  await page.getByTestId("service-modal-duration").selectOption("45");
+  await page.getByTestId("service-modal-price").fill("35,00");
+  const staffCheckbox = page.getByTestId(`service-modal-staff-${staffName}`);
+  if (!(await staffCheckbox.isChecked())) {
+    await staffCheckbox.check();
+  }
+  await page.getByTestId("service-modal-save").click();
+  await expect(page.getByTestId("services-settings-feedback")).toContainText(serviceName);
 
   await page.getByTestId("nav-kalender").click();
   await page.getByTestId("calendar-date").fill("2026-11-09");
   await page.getByRole("button", { name: `${staffName} 10:00` }).click();
   await page.getByTestId("booking-service").click();
-  await page.getByRole("option", { name: serviceName }).click();
+  await page.getByRole("option", { name: new RegExp(serviceName) }).click();
   await page.getByTestId("booking-customer-add").click();
   await page.getByTestId("booking-customer-name").fill(customerName);
   await page.getByTestId("booking-save").click();

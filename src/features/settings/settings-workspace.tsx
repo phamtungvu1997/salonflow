@@ -83,12 +83,16 @@ const DEFAULT_SETTINGS: SalonSettingsRecord = {
   onlineWidgetColor: "#18202c",
 };
 
-export function SettingsWorkspace() {
+export function SettingsWorkspace({
+  initialSection = "hub",
+}: {
+  initialSection?: SettingsSectionId;
+} = {}) {
   const { activeSalon } = useSalon();
   const salonId = activeSalon?.id ?? "salon_jeannie";
   const activeSalonName = activeSalon?.name ?? "Jeannie Nagelstudio";
 
-  const [activeSection, setActiveSection] = useState<SettingsSectionId>("hub");
+  const [activeSection, setActiveSection] = useState<SettingsSectionId>(initialSection);
   const [settings, setSettings] = useState<SalonSettingsRecord>(DEFAULT_SETTINGS);
   const [stats, setStats] = useState<SettingsStats>({
     totalCustomers: 0,

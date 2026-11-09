@@ -1,9 +1,7 @@
 import {
   CalendarDays,
   Megaphone,
-  Scissors,
   Settings,
-  UserRound,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -27,18 +25,6 @@ export const primaryNav: NavItem[] = [
     label: "Kunden",
     icon: Users,
     description: "Kundensuche und Profile",
-  },
-  {
-    href: "/mitarbeiter",
-    label: "Mitarbeiter",
-    icon: UserRound,
-    description: "Team und Qualifikationen",
-  },
-  {
-    href: "/leistungen",
-    label: "Leistungen",
-    icon: Scissors,
-    description: "Kategorien und Dauer",
   },
   {
     href: "/marketing",
