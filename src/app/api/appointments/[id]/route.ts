@@ -17,6 +17,8 @@ const bodySchema = z.object({
   status: z
     .enum(["booked", "confirmed", "arrived", "in_progress", "completed", "no_show"])
     .optional(),
+  allowUnavailableOverride: z.boolean().optional(),
+  idempotencyKey: z.string().max(128).optional(),
 });
 
 function formatHistoryDateTime(instant: Date): string {
@@ -103,7 +105,7 @@ export async function GET(
     const historyItems = [
       ...audits.map((entry) => {
         const ts = formatHistoryDateTime(entry.created_at);
-        if (entry.action === "reschedule") {
+        if (entry.action === "reschedule" || entry.action === "reschedule_override") {
           return {
             id: entry.id,
             title: `Termin bearbeitet / verschoben (${entry.detail || startFormatted})`,
@@ -222,6 +224,9 @@ export async function PATCH(
       staffId: data.staffId,
       durationMinutes: data.durationMinutes,
       status: data.status,
+      allowUnavailableOverride: data.allowUnavailableOverride,
+      idempotencyKey:
+        data.idempotencyKey || request.headers.get("Idempotency-Key") || undefined,
     });
     if (data.notes !== undefined) {
       await sql`

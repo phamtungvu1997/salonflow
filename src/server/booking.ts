@@ -38,6 +38,7 @@ async function assertBookableWindow(
   salonId: string,
   start: Date,
   end: Date,
+  options?: { allowUnavailableOverride?: boolean },
 ) {
   if (isoWeekday(start) !== isoWeekday(end) || minutesOfDay(end) <= minutesOfDay(start)) {
     throw new BookingError(
@@ -55,11 +56,13 @@ async function assertBookableWindow(
     minutesOfDay(start),
     minutesOfDay(end),
   )) {
-    throw new BookingError(
-      422,
-      "outside_shift",
-      "Außerhalb der Arbeitszeit oder in einer Pause.",
-    );
+    if (!options?.allowUnavailableOverride) {
+      throw new BookingError(
+        422,
+        "outside_shift",
+        "Außerhalb der Arbeitszeit oder in einer Pause.",
+      );
+    }
   }
 
   const overlappingAbsences = await tx<{ id: string }[]>`
@@ -71,7 +74,7 @@ async function assertBookableWindow(
       AND ends_at > ${start}
     LIMIT 1
   `;
-  if (overlappingAbsences.length > 0) {
+  if (overlappingAbsences.length > 0 && !options?.allowUnavailableOverride) {
     throw new BookingError(
       422,
       "absent",
@@ -260,10 +263,17 @@ export async function rescheduleAppointment(
     staffId?: string;
     durationMinutes?: number;
     status?: "booked" | "confirmed" | "arrived" | "in_progress" | "completed" | "no_show";
+    allowUnavailableOverride?: boolean;
+    idempotencyKey?: string;
   },
 ) {
   try {
     return await sql.begin(async (tx) => {
+      if (input.idempotencyKey) {
+        await tx`
+          SELECT pg_advisory_xact_lock(hashtextextended(${`reschedule:${input.appointmentId}:${input.idempotencyKey}`}, 0))
+        `;
+      }
       const rows = await tx<{
         version: number;
         salon_id: string;
@@ -301,6 +311,29 @@ export async function rescheduleAppointment(
         if (assigned.length === 0) {
           throw new BookingError(422, "staff_salon", "Mitarbeiter ist diesem Salon nicht zugeordnet.");
         }
+        // When reassigning to another employee without changing serviceId, verify the target employee is eligible for the appointment's service if it exists in catalog
+        if (!input.serviceId) {
+          const catalogService = await tx<{ id: string }[]>`
+            SELECT s.id
+            FROM services s
+            JOIN salon_services ss ON ss.service_id = s.id AND ss.salon_id = ${current.salon_id}
+            WHERE s.name = ${current.title_snapshot}
+            LIMIT 1
+          `;
+          if (catalogService[0]) {
+            const eligible = await tx`
+              SELECT 1 FROM staff_services
+              WHERE service_id = ${catalogService[0].id} AND staff_id = ${nextStaffId}
+            `;
+            if (eligible.length === 0) {
+              throw new BookingError(
+                422,
+                "ineligible",
+                "Leistung ist für diesen Mitarbeiter nicht buchbar.",
+              );
+            }
+          }
+        }
       }
 
       if (input.serviceId) {
@@ -327,7 +360,9 @@ export async function rescheduleAppointment(
 
       const start = zonedDateTimeToUtc(input.date, input.start);
       const end = new Date(start.getTime() + nextDuration * 60_000);
-      await assertBookableWindow(tx, nextStaffId, current.salon_id, start, end);
+      await assertBookableWindow(tx, nextStaffId, current.salon_id, start, end, {
+        allowUnavailableOverride: input.allowUnavailableOverride,
+      });
       const resources = await tx<{ id: string }[]>`
         SELECT id FROM resources WHERE staff_id = ${nextStaffId} AND resource_type = 'staff' FOR UPDATE
       `;
@@ -365,16 +400,24 @@ export async function rescheduleAppointment(
       const auditAction =
         input.status === "no_show" && current.status !== "no_show"
           ? "no_show"
-          : "reschedule";
+          : input.allowUnavailableOverride
+            ? "reschedule_override"
+            : "reschedule";
+      const auditDetail = input.allowUnavailableOverride
+        ? `${input.start} (${nextStaffId}, außerhalb regulärer Verfügbarkeit bestätigt)`
+        : `${input.start} (${nextStaffId})`;
       await tx`
         INSERT INTO appointment_audit (id, appointment_id, actor_user_id, action, detail)
-        VALUES (${`audit_${crypto.randomUUID()}`}, ${input.appointmentId}, ${actorUserId}, ${auditAction}, ${input.start})
+        VALUES (${`audit_${crypto.randomUUID()}`}, ${input.appointmentId}, ${actorUserId}, ${auditAction}, ${auditDetail})
       `;
       await recordOutbox(tx, current.salon_id, input.appointmentId, "appointment.rescheduled");
       return {
         appointmentId: input.appointmentId,
         version: current.version + 1,
         status: nextStatus,
+        staffId: nextStaffId,
+        startMinute: minutesOfDay(start),
+        endMinute: minutesOfDay(end),
       };
     });
   } catch (error) {

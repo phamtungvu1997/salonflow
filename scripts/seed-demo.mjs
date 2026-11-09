@@ -274,6 +274,17 @@ for (const [id, staffId, customerId, , title, duration, price, start, end] of sa
   `;
 }
 
+await sql`
+  UPDATE appointments
+  SET status = 'booked', version = 1
+  WHERE id LIKE 'appt_demo_%'
+`;
+await sql`
+  UPDATE resource_allocations
+  SET active = true
+  WHERE id LIKE 'alloc_appt_demo_%'
+`;
+
 // Sample unavailability blocks matching the reference video ("Julia is not available")
 const demoAbsences = [
   ["abs_demo_julia_1", "staff_julia", "2026-11-09T10:00:00+01:00", "2026-11-09T10:45:00+01:00", "Auffüllen mit Vegan-Gel"],

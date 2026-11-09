@@ -24,7 +24,7 @@ import {
 } from "@/features/calendar/appointment-detail-popover";
 import { AppointmentModal } from "@/features/calendar/appointment-modal/appointment-modal";
 import { DateBracket } from "@/features/calendar/appointment-modal/date-time-brackets";
-import { api } from "@/features/booking/api";
+import { ApiError, api } from "@/features/booking/api";
 import {
   berlinToday,
   isoWeekdayFromDate,
@@ -32,6 +32,16 @@ import {
   minutesLabel,
   toMinute,
 } from "@/features/calendar/calendar-date";
+import {
+  classifyDropAvailability,
+  type DragTargetProposal,
+  hasExceededDragThreshold,
+  resolveCalendarDropTarget,
+} from "@/features/calendar/calendar-drag-geometry";
+import {
+  DragAvailabilityConfirmModal,
+  type DragAvailabilityWarningState,
+} from "@/features/calendar/drag-availability-confirm-modal";
 import { useSalon } from "@/features/salons/salon-context";
 import { subscribeServiceCatalogUpdates } from "@/features/services/service-catalog-sync";
 import { cn } from "@/lib/utils";
@@ -132,8 +142,34 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     "view" | "jump" | "employees" | "showAll" | null
   >(null);
   const [nowMinute, setNowMinute] = useState<number>(18 * 60 + 36);
+  const [slotIntervalMinutes, setSlotIntervalMinutes] = useState<number>(15);
+  const [activeDrag, setActiveDrag] = useState<{
+    appointment: CalendarAppointmentDetail;
+    originStaffColor: string;
+    grabOffsetY: number;
+    pointerX: number;
+    pointerY: number;
+    proposal: DragTargetProposal | null;
+    availability: ReturnType<typeof classifyDropAvailability> | null;
+  } | null>(null);
+  const [dragWarning, setDragWarning] = useState<DragAvailabilityWarningState | null>(null);
+  const [dragSaving, setDragSaving] = useState(false);
+
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const dayGridScrollRef = useRef<HTMLDivElement>(null);
   const openerRef = useRef<HTMLElement | null>(null);
+  const suppressCardClickRef = useRef(false);
+  const dragSessionRef = useRef<{
+    appointment: CalendarAppointmentDetail;
+    originStaffColor: string;
+    startX: number;
+    startY: number;
+    grabOffsetY: number;
+    hasCrossedThreshold: boolean;
+    latestX: number;
+    latestY: number;
+    latestProposal: DragTargetProposal | null;
+  } | null>(null);
 
   useEffect(() => {
     function updateClock() {
@@ -170,6 +206,9 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       viewMode === "week" ? `&endDate=${addDaysIso(mondayOfWeek, 6)}` : "";
     const [calendar, serviceBody] = await Promise.all([
       api<{
+        calendarSettings?: {
+          slotIntervalMinutes?: number;
+        };
         staff: StaffColumn[];
         appointments: CalendarAppointmentDetail[];
         absences?: CalendarAbsenceItem[];
@@ -177,6 +216,9 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       }>(`/api/calendar?salonId=${activeSalon.id}&date=${rangeStart}${rangeEndParam}`),
       api<{ services: ServiceOption[] }>(`/api/services?salonId=${activeSalon.id}`),
     ]);
+    if (calendar.calendarSettings?.slotIntervalMinutes) {
+      setSlotIntervalMinutes(calendar.calendarSettings.slotIntervalMinutes);
+    }
     setStaff(calendar.staff.filter((member) => !member.displayName.startsWith("Archiv ")));
     setAppointments(calendar.appointments);
     setAbsences(calendar.absences ?? []);
@@ -258,11 +300,358 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     setSlot({ staffId, start });
   }
 
+  function measureDayGridMetrics() {
+    const scroller = dayGridScrollRef.current;
+    if (!scroller) return null;
+    const scrollerRect = scroller.getBoundingClientRect();
+    const firstRowCell = scroller.querySelector<HTMLElement>('[data-time-axis-row="08:00"]');
+    const secondRowCell = scroller.querySelector<HTMLElement>('[data-time-axis-row="08:15"]');
+    const firstSlotTopViewportY = firstRowCell
+      ? firstRowCell.getBoundingClientRect().top
+      : scrollerRect.top + 56 - scroller.scrollTop;
+    const slotRowHeightPx =
+      firstRowCell && secondRowCell
+        ? Math.max(20, secondRowCell.getBoundingClientRect().top - firstRowCell.getBoundingClientRect().top)
+        : 28;
+
+    const columns = visibleStaff
+      .map((member) => {
+        const headerEl = scroller.querySelector<HTMLElement>(`[data-testid="column-${member.id}"]`);
+        if (!headerEl) return null;
+        const rect = headerEl.getBoundingClientRect();
+        return {
+          staffId: member.id,
+          displayName: member.displayName,
+          color: member.color,
+          left: rect.left,
+          right: rect.right,
+        };
+      })
+      .filter((col): col is NonNullable<typeof col> => col !== null);
+
+    // If only 1 staff column is visible, allow full horizontal width of the grid body to target that column
+    if (columns.length === 1) {
+      columns[0]!.left = Math.min(columns[0]!.left, scrollerRect.left + 56);
+      columns[0]!.right = Math.max(columns[0]!.right, scrollerRect.right);
+    }
+
+    return {
+      firstSlotTopViewportY,
+      gridLeftViewportX: scrollerRect.left + 56,
+      gridRightViewportX: scrollerRect.right,
+      gridTopViewportY: scrollerRect.top + 56,
+      gridBottomViewportY: scrollerRect.bottom,
+      slotRowHeightPx,
+      slotIntervalMinutes: slotIntervalMinutes || 15,
+      startHour,
+      endHour,
+      columns,
+    };
+  }
+
+  async function commitAppointmentMove(params: {
+    appointment: CalendarAppointmentDetail;
+    targetStaffId: string;
+    targetStartMinute: number;
+    targetEndMinute: number;
+    allowUnavailableOverride: boolean;
+  }) {
+    const {
+      appointment,
+      targetStaffId,
+      targetStartMinute,
+      targetEndMinute,
+      allowUnavailableOverride,
+    } = params;
+    const previousAppointments = appointments;
+    const targetStartLabel = minutesLabel(targetStartMinute);
+
+    // Optimistic preview in UI while request is in flight
+    setDragSaving(true);
+    setAppointments((prev) =>
+      prev.map((item) =>
+        item.id === appointment.id
+          ? {
+              ...item,
+              staffId: targetStaffId,
+              startMinute: targetStartMinute,
+              endMinute: targetEndMinute,
+            }
+          : item,
+      ),
+    );
+
+    try {
+      await api(`/api/appointments/${appointment.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          expectedVersion: appointment.version,
+          date: appointment.date || date,
+          start: targetStartLabel,
+          staffId: targetStaffId !== appointment.staffId ? targetStaffId : undefined,
+          allowUnavailableOverride: allowUnavailableOverride ? true : undefined,
+          idempotencyKey: `drag_${appointment.id}_v${appointment.version}_${targetStaffId}_${targetStartLabel}_${allowUnavailableOverride ? "override" : "std"}`,
+        }),
+      });
+      setDragWarning(null);
+      await reload();
+      setMessage("Termin verschoben.");
+    } catch (error) {
+      // Roll back optimistic state immediately
+      setAppointments(previousAppointments);
+      if (
+        error instanceof ApiError &&
+        error.status === 422 &&
+        (error.code === "outside_shift" || error.code === "absent") &&
+        !allowUnavailableOverride
+      ) {
+        const targetStaffMember = staff.find((s) => s.id === targetStaffId);
+        setDragWarning({
+          appointmentId: appointment.id,
+          customerName: appointment.customerName,
+          serviceName: appointment.serviceName,
+          targetStaffId,
+          targetStaffName: targetStaffMember?.displayName ?? targetStaffId,
+          targetStartMinute,
+          targetEndMinute,
+          unavailableReason: error.message,
+          expectedVersion: appointment.version,
+        });
+        return;
+      }
+      setDragWarning(null);
+      setMessage(
+        error instanceof Error ? error.message : "Termin konnte nicht verschoben werden.",
+      );
+      await reload().catch(() => {});
+    } finally {
+      setDragSaving(false);
+    }
+  }
+
+  function startAppointmentPointerDrag(
+    event: React.PointerEvent<HTMLButtonElement>,
+    appointment: CalendarAppointmentDetail,
+    originStaffColor: string,
+  ) {
+    if (event.button !== 0 || dragSaving || dragWarning) return;
+    const cardRect = event.currentTarget.getBoundingClientRect();
+    const grabOffsetY = Math.max(
+      4,
+      Math.min(cardRect.height - 4, event.clientY - cardRect.top),
+    );
+    dragSessionRef.current = {
+      appointment,
+      originStaffColor,
+      startX: event.clientX,
+      startY: event.clientY,
+      grabOffsetY,
+      hasCrossedThreshold: false,
+      latestX: event.clientX,
+      latestY: event.clientY,
+      latestProposal: null,
+    };
+  }
+
+  useEffect(() => {
+    function handlePointerMove(event: PointerEvent) {
+      const session = dragSessionRef.current;
+      if (!session) return;
+      session.latestX = event.clientX;
+      session.latestY = event.clientY;
+
+      if (!session.hasCrossedThreshold) {
+        if (
+          !hasExceededDragThreshold(
+            session.startX,
+            session.startY,
+            event.clientX,
+            event.clientY,
+          )
+        ) {
+          return;
+        }
+        session.hasCrossedThreshold = true;
+        suppressCardClickRef.current = true;
+        setSelected(null);
+        setSelectedAbsence(null);
+      }
+
+      // Auto-scroll day grid when dragging near top or bottom edges
+      const scroller = dayGridScrollRef.current;
+      if (scroller) {
+        const scrollerRect = scroller.getBoundingClientRect();
+        const topEdge = scrollerRect.top + 68;
+        const bottomEdge = scrollerRect.bottom - 28;
+        if (event.clientY < topEdge && scroller.scrollTop > 0) {
+          scroller.scrollTop = Math.max(0, scroller.scrollTop - 14);
+        } else if (event.clientY > bottomEdge) {
+          scroller.scrollTop += 14;
+        }
+      }
+
+      const metrics = measureDayGridMetrics();
+      if (!metrics) return;
+      const durationMinutes =
+        session.appointment.durationMinutes ||
+        Math.max(15, session.appointment.endMinute - session.appointment.startMinute);
+
+      const proposal = resolveCalendarDropTarget(
+        event.clientX,
+        event.clientY,
+        session.grabOffsetY,
+        durationMinutes,
+        metrics,
+      );
+      session.latestProposal = proposal;
+
+      let availability: ReturnType<typeof classifyDropAvailability> | null = null;
+      if (proposal) {
+        const targetStaffMember = staff.find((s) => s.id === proposal.staffId);
+        availability = classifyDropAvailability({
+          appointmentId: session.appointment.id,
+          serviceName: session.appointment.serviceName,
+          targetStaffId: proposal.staffId,
+          targetStaffName: targetStaffMember?.displayName ?? proposal.staffDisplayName,
+          targetStartMinute: proposal.startMinute,
+          targetEndMinute: proposal.endMinute,
+          isoWeekday: weekday,
+          shifts: targetStaffMember?.shifts ?? [],
+          absences,
+          appointments,
+          services,
+        });
+      }
+
+      setActiveDrag({
+        appointment: session.appointment,
+        originStaffColor: session.originStaffColor,
+        grabOffsetY: session.grabOffsetY,
+        pointerX: event.clientX,
+        pointerY: event.clientY,
+        proposal,
+        availability,
+      });
+    }
+
+    function handlePointerUp() {
+      const session = dragSessionRef.current;
+      if (!session) return;
+      dragSessionRef.current = null;
+
+      if (!session.hasCrossedThreshold) {
+        setActiveDrag(null);
+        return;
+      }
+
+      const proposal = session.latestProposal;
+      const appt = session.appointment;
+      setActiveDrag(null);
+
+      // Keep click suppression briefly so the trailing click event after pointerup doesn't open the popover
+      window.setTimeout(() => {
+        suppressCardClickRef.current = false;
+      }, 80);
+
+      if (!proposal) {
+        // Released outside valid calendar target -> cancel drag
+        return;
+      }
+
+      // No-op if dropped back onto exact same employee and start time
+      if (
+        proposal.staffId === appt.staffId &&
+        proposal.startMinute === appt.startMinute
+      ) {
+        return;
+      }
+
+      const targetStaffMember = staff.find((s) => s.id === proposal.staffId);
+      const classification = classifyDropAvailability({
+        appointmentId: appt.id,
+        serviceName: appt.serviceName,
+        targetStaffId: proposal.staffId,
+        targetStaffName: targetStaffMember?.displayName ?? proposal.staffDisplayName,
+        targetStartMinute: proposal.startMinute,
+        targetEndMinute: proposal.endMinute,
+        isoWeekday: weekday,
+        shifts: targetStaffMember?.shifts ?? [],
+        absences,
+        appointments,
+        services,
+      });
+
+      if (classification.kind === "hard_conflict") {
+        // Still call the Booking Engine without override so server-side 409 / 422 is exercised & authoritative
+        void commitAppointmentMove({
+          appointment: appt,
+          targetStaffId: proposal.staffId,
+          targetStartMinute: proposal.startMinute,
+          targetEndMinute: proposal.endMinute,
+          allowUnavailableOverride: false,
+        });
+        return;
+      }
+
+      if (classification.kind === "soft_unavailable") {
+        // Show the video-derived confirmation modal before persisting
+        setDragWarning({
+          appointmentId: appt.id,
+          customerName: appt.customerName,
+          serviceName: appt.serviceName,
+          targetStaffId: proposal.staffId,
+          targetStaffName: targetStaffMember?.displayName ?? proposal.staffDisplayName,
+          targetStartMinute: proposal.startMinute,
+          targetEndMinute: proposal.endMinute,
+          unavailableReason: classification.reason,
+          expectedVersion: appt.version,
+        });
+        return;
+      }
+
+      void commitAppointmentMove({
+        appointment: appt,
+        targetStaffId: proposal.staffId,
+        targetStartMinute: proposal.startMinute,
+        targetEndMinute: proposal.endMinute,
+        allowUnavailableOverride: false,
+      });
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && dragSessionRef.current?.hasCrossedThreshold) {
+        event.preventDefault();
+        event.stopPropagation();
+        dragSessionRef.current = null;
+        setActiveDrag(null);
+        window.setTimeout(() => {
+          suppressCardClickRef.current = false;
+        }, 80);
+      }
+    }
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerUp);
+    window.addEventListener("keydown", handleKeyDown, true);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerUp);
+      window.removeEventListener("keydown", handleKeyDown, true);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visibleStaff, staff, absences, appointments, services, weekday, date, slotIntervalMinutes]);
+
   const weekNum = isoWeekNumber(date);
   const todayStr = todayIso();
 
   return (
-    <div data-testid="calendar-board" className="flex min-h-0 flex-1 flex-col">
+    <div
+      data-testid="calendar-board"
+      data-drag-saving={dragSaving ? "true" : "false"}
+      className="flex min-h-0 flex-1 flex-col"
+    >
       {/* Top Calendar title + gear & filter icons */}
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -602,7 +991,11 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       {/* Main Calendar Grid: Day View vs Week View */}
       {viewMode === "day" ? (
         <div
-          className="min-h-0 flex-1 overflow-auto rounded-lg border border-[#e1e4ea] bg-white"
+          ref={dayGridScrollRef}
+          className={cn(
+            "min-h-0 flex-1 overflow-auto rounded-lg border border-[#e1e4ea] bg-white",
+            activeDrag && "select-none cursor-grabbing",
+          )}
           data-testid="calendar-day-grid"
         >
           <div
@@ -626,10 +1019,14 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                 .map((p) => p[0])
                 .join("")
                 .slice(0, 2);
+              const isDropTargetColumn = activeDrag?.proposal?.staffId === member.id;
               return (
                 <div
                   key={member.id}
-                  className="sticky top-0 z-20 flex h-8 items-center justify-center gap-1.5 border-b border-l border-[#e6e8ee] bg-white px-2 text-xs font-semibold text-[#1c1e21]"
+                  className={cn(
+                    "sticky top-0 z-20 flex h-8 items-center justify-center gap-1.5 border-b border-l border-[#e6e8ee] px-2 text-xs font-semibold text-[#1c1e21] transition-colors",
+                    isDropTargetColumn ? "bg-[#f0f4ff] ring-1 ring-inset ring-[#111827]/20" : "bg-white",
+                  )}
                   style={{ gridColumn: staffIndex + 2, gridRow: 1 }}
                   data-testid={`column-${member.id}`}
                 >
@@ -667,6 +1064,83 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
               );
             })}
 
+            {/* Snapped Drop-Target Preview Card inside the Day Grid (matching video 1.6s–9.1s) */}
+            {activeDrag?.proposal
+              ? (() => {
+                  const targetColIndex = visibleStaff.findIndex(
+                    (m) => m.id === activeDrag.proposal?.staffId,
+                  );
+                  if (targetColIndex === -1) return null;
+                  const startSlotIndex = Math.max(
+                    0,
+                    Math.round((activeDrag.proposal.startMinute - startHour * 60) / 15),
+                  );
+                  const spanSlots = Math.max(
+                    1,
+                    Math.round(
+                      (activeDrag.proposal.endMinute - activeDrag.proposal.startMinute) / 15,
+                    ),
+                  );
+                  const previewRowStart = startSlotIndex + 3;
+                  const isHardConflict = activeDrag.availability?.kind === "hard_conflict";
+                  const isSoftUnavailable =
+                    activeDrag.availability?.kind === "soft_unavailable";
+                  const previewRange = `${minutesLabel(activeDrag.proposal.startMinute)} - ${minutesLabel(activeDrag.proposal.endMinute)}`;
+
+                  return (
+                    <div
+                      style={{
+                        gridColumn: targetColIndex + 2,
+                        gridRow: `${previewRowStart} / span ${spanSlots}`,
+                      }}
+                      className="pointer-events-none relative z-30 h-0 w-full overflow-visible"
+                    >
+                      <div
+                        data-testid="calendar-drag-preview"
+                        data-target-staff-id={activeDrag.proposal.staffId}
+                        data-target-start={minutesLabel(activeDrag.proposal.startMinute)}
+                        data-target-end={minutesLabel(activeDrag.proposal.endMinute)}
+                        data-availability-kind={activeDrag.availability?.kind ?? "available"}
+                        style={{
+                          height: `${spanSlots * 28 - 4}px`,
+                          backgroundColor: activeDrag.proposal.staffColor,
+                        }}
+                        className={cn(
+                          "pointer-events-none absolute inset-x-0.5 top-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-[0_10px_24px_rgba(15,23,42,0.24)] ring-2",
+                          isHardConflict
+                            ? "border-[#b42318] ring-[#b42318]"
+                            : isSoftUnavailable
+                              ? "border-[#d97706] ring-[#d97706]"
+                              : "border-[#111827] ring-[#111827]/70",
+                        )}
+                      >
+                        <span
+                          data-testid="calendar-drag-preview-time"
+                          className="block truncate text-[10px] font-semibold text-[#1c1e21]"
+                        >
+                          {previewRange}
+                        </span>
+                        <span className="block truncate text-[11px] font-bold text-[#1c1e21]">
+                          {activeDrag.appointment.customerName}
+                        </span>
+                        <span className="block truncate text-[10px] text-[#1c1e21]/85">
+                          {activeDrag.appointment.serviceName}
+                        </span>
+                        {activeDrag.availability &&
+                        activeDrag.availability.kind !== "available" ? (
+                          <span
+                            data-testid="calendar-drag-preview-warning"
+                            className="mt-0.5 block truncate text-[10px] font-semibold text-[#b42318]"
+                          >
+                            {activeDrag.availability.reason}
+                          </span>
+                        ) : null}
+                      </div>
+                    </div>
+                  );
+                })()
+              : null}
+
             {/* Time rows (every 15 minutes shown in the left axis) */}
             {slots.map((time, slotIndex) => {
               const row = slotIndex + 3;
@@ -676,6 +1150,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
               return (
                 <div key={time} className="contents">
                   <div
+                    data-time-axis-row={time}
                     className={cn(
                       "relative h-7 border-b border-[#eef0f3] pr-2 text-right text-[10px] leading-7",
                       isFullHour ? "font-bold text-[#1c1e21]" : "text-[#98a0aa]",
@@ -731,6 +1206,26 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                         ? `${minutesLabel(coveringAbsence.startMinute)} - ${minutesLabel(coveringAbsence.endMinute)}`
                         : "";
                     const isWalkIn = covering?.customerName === "Walk-in";
+                    const isBeingDragged =
+                      covering && activeDrag?.appointment.id === covering.id;
+                    const coveringOutsideShift = covering
+                      ? !member.shifts.some(
+                          (shift) =>
+                            shift.isoWeekday === weekday &&
+                            covering.startMinute >= shift.startMinute &&
+                            covering.endMinute <= shift.endMinute,
+                        )
+                      : false;
+                    const coveringOverlapsAbsence = covering
+                      ? absences.some(
+                          (abs) =>
+                            abs.staffId === member.id &&
+                            abs.startMinute < covering.endMinute &&
+                            abs.endMinute > covering.startMinute,
+                        )
+                      : false;
+                    const showUnavailableNoteOnCard =
+                      coveringOutsideShift || coveringOverlapsAbsence;
 
                     return (
                       <div
@@ -755,11 +1250,27 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                         {covering ? (
                           <button
                             type="button"
-                            className="absolute inset-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/25 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-all hover:z-10 hover:shadow-md"
+                            onPointerDown={(event) =>
+                              startAppointmentPointerDrag(event, covering, member.color)
+                            }
+                            className={cn(
+                              "absolute inset-0.5 flex cursor-grab flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/25 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-all select-none hover:z-10 hover:shadow-md active:cursor-grabbing",
+                              isBeingDragged &&
+                                "z-10 opacity-45 ring-1 ring-dashed ring-[#111827]/50",
+                            )}
                             style={{ backgroundColor: member.color }}
                             title={`${timeRangeLabel} · ${covering.customerName} · ${covering.serviceName}`}
                             data-testid={`appointment-${covering.id}`}
+                            data-staff-id={member.id}
+                            data-start-minute={covering.startMinute}
+                            data-end-minute={covering.endMinute}
+                            data-dragging={isBeingDragged ? "true" : "false"}
                             onClick={(event) => {
+                              if (suppressCardClickRef.current) {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                return;
+                              }
                               const rect = event.currentTarget.getBoundingClientRect();
                               setSlot(null);
                               setSelectedAbsence(null);
@@ -785,6 +1296,15 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                             <span className="block truncate text-[10px] text-[#1c1e21]/85">
                               {covering.serviceName}
                             </span>
+                            {/* Line 4: Inline unavailability note when scheduled outside regular shift/absence (matching video cards) */}
+                            {showUnavailableNoteOnCard ? (
+                              <span
+                                data-testid={`appointment-unavailable-note-${covering.id}`}
+                                className="block truncate text-[9.5px] font-semibold text-[#b42318]"
+                              >
+                                {member.displayName.split(" ")[0]} ist nicht verfügbar
+                              </span>
+                            ) : null}
                             {/* Bottom-right status icons */}
                             <span
                               className="pointer-events-none absolute bottom-1 right-1 flex items-center gap-0.5 text-[#1c1e21]/55"
@@ -1126,6 +1646,31 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
             document.body,
           )
         : null}
+
+      {/* Drag & Drop Soft Unavailability Confirmation Modal (matching video 09.1s–13.4s) */}
+      {dragWarning ? (
+        <DragAvailabilityConfirmModal
+          warning={dragWarning}
+          saving={dragSaving}
+          onCancel={() => {
+            if (!dragSaving) setDragWarning(null);
+          }}
+          onConfirm={async () => {
+            const appt = appointments.find((item) => item.id === dragWarning.appointmentId);
+            if (!appt) {
+              setDragWarning(null);
+              return;
+            }
+            await commitAppointmentMove({
+              appointment: appt,
+              targetStaffId: dragWarning.targetStaffId,
+              targetStartMinute: dragWarning.targetStartMinute,
+              targetEndMinute: dragWarning.targetEndMinute,
+              allowUnavailableOverride: true,
+            });
+          }}
+        />
+      ) : null}
     </div>
   );
 }

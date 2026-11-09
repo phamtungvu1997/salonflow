@@ -36,16 +36,23 @@ async function makeStaff(salonId: string, startMinute = 9 * 60, endMinute = 18 *
   return staffId;
 }
 
-async function makeService(salonId: string, staffId: string, duration = 60) {
+function makeService(
+  salonId: string,
+  staffId: string,
+  duration = 60,
+  serviceName = "Maniküre Test",
+) {
   const sql = getSql();
   const serviceId = `svc_${randomUUID()}`;
-  await sql`INSERT INTO services (id, name) VALUES (${serviceId}, 'Maniküre Test')`;
-  await sql`
-    INSERT INTO salon_services (salon_id, service_id, duration_minutes, price_cents)
-    VALUES (${salonId}, ${serviceId}, ${duration}, 3500)
-  `;
-  await sql`INSERT INTO staff_services (staff_id, service_id) VALUES (${staffId}, ${serviceId})`;
-  return serviceId;
+  return (async () => {
+    await sql`INSERT INTO services (id, name) VALUES (${serviceId}, ${serviceName})`;
+    await sql`
+      INSERT INTO salon_services (salon_id, service_id, duration_minutes, price_cents)
+      VALUES (${salonId}, ${serviceId}, ${duration}, 3500)
+    `;
+    await sql`INSERT INTO staff_services (staff_id, service_id) VALUES (${staffId}, ${serviceId})`;
+    return serviceId;
+  })();
 }
 
 async function makeCustomer(salonId: string) {
@@ -468,5 +475,93 @@ describe.skipIf(!process.env.DATABASE_URL)("NS-017 booking engine", () => {
         start: "11:00",
       }),
     ).rejects.toMatchObject({ status: 422, code: "absent" });
+  });
+
+  it("IT-11 supports atomic drag-reschedule across employee + time, rejects ineligible staff and hard overlaps even with allowUnavailableOverride, and audits confirmed out-of-shift overrides", async () => {
+    const sql = getSql();
+    const staffOrigin = await makeStaff(salonA, 9 * 60, 18 * 60);
+    const staffTargetEligible = await makeStaff(salonA, 9 * 60, 18 * 60);
+    const staffTargetIneligible = await makeStaff(salonA, 9 * 60, 18 * 60);
+    const uniqueSvcName = `Maniküre Test Drag ${randomUUID().slice(0, 6)}`;
+    const serviceId = await makeService(salonA, staffOrigin, 60, uniqueSvcName);
+    await sql`
+      INSERT INTO staff_services (staff_id, service_id)
+      VALUES (${staffTargetEligible}, ${serviceId})
+    `;
+    const customerA = await makeCustomer(salonA);
+    const customerB = await makeCustomer(salonA);
+
+    const movedAppt = await createAppointment(sql, actor, {
+      salonId: salonA,
+      staffId: staffOrigin,
+      customerId: customerA,
+      serviceId,
+      date: monday,
+      start: "10:00",
+    });
+    const blockingAppt = await createAppointment(sql, actor, {
+      salonId: salonA,
+      staffId: staffTargetEligible,
+      customerId: customerB,
+      serviceId,
+      date: monday,
+      start: "14:00",
+    });
+    expect(blockingAppt.appointmentId).toBeTruthy();
+
+    // 1. Rejects drag-reschedule to an employee who is NOT eligible for the appointment's service
+    await expect(
+      rescheduleAppointment(sql, actor, {
+        appointmentId: movedAppt.appointmentId,
+        expectedVersion: 1,
+        date: monday,
+        start: "12:00",
+        staffId: staffTargetIneligible,
+      }),
+    ).rejects.toMatchObject({ status: 422, code: "ineligible" });
+
+    // 2. Rejects drag-reschedule outside working shift (19:00-20:00) when allowUnavailableOverride is NOT set
+    await expect(
+      rescheduleAppointment(sql, actor, {
+        appointmentId: movedAppt.appointmentId,
+        expectedVersion: 1,
+        date: monday,
+        start: "19:00",
+        staffId: staffTargetEligible,
+      }),
+    ).rejects.toMatchObject({ status: 422, code: "outside_shift" });
+
+    // 3. Accepts atomic employee + time move to out-of-shift slot (19:00-20:00) when allowUnavailableOverride = true and writes reschedule_override audit
+    const confirmedOverride = await rescheduleAppointment(sql, actor, {
+      appointmentId: movedAppt.appointmentId,
+      expectedVersion: 1,
+      date: monday,
+      start: "19:00",
+      staffId: staffTargetEligible,
+      allowUnavailableOverride: true,
+    });
+    expect(confirmedOverride.version).toBe(2);
+    expect(confirmedOverride.staffId).toBe(staffTargetEligible);
+    expect(confirmedOverride.startMinute).toBe(19 * 60);
+    expect(confirmedOverride.endMinute).toBe(20 * 60);
+
+    const auditRows = await sql<{ action: string }[]>`
+      SELECT action FROM appointment_audit
+      WHERE appointment_id = ${movedAppt.appointmentId}
+      ORDER BY created_at
+    `;
+    expect(auditRows.map((r) => r.action)).toContain("reschedule_override");
+
+    // 4. Hard overlap (14:00-15:00 on staffTargetEligible) is ALWAYS rejected by PostgreSQL GiST exclusion even with allowUnavailableOverride = true
+    await expect(
+      rescheduleAppointment(sql, actor, {
+        appointmentId: movedAppt.appointmentId,
+        expectedVersion: 2,
+        date: monday,
+        start: "14:00",
+        staffId: staffTargetEligible,
+        allowUnavailableOverride: true,
+      }),
+    ).rejects.toMatchObject({ status: 409, code: "conflict" });
   });
 });
