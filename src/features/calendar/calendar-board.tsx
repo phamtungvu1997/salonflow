@@ -1641,6 +1641,33 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                     </span>
                   </div>
                 </div>
+                <div className="mt-3 flex items-center justify-end border-t border-[#f0f2f5] pt-3">
+                  <button
+                    type="button"
+                    data-testid="absence-cancel"
+                    onClick={async () => {
+                      const absId = selectedAbsence.absence.id;
+                      try {
+                        await api(
+                          `/api/absences?salonId=${encodeURIComponent(activeSalon?.id ?? "salon_jeannie")}&id=${encodeURIComponent(absId)}`,
+                          { method: "DELETE" },
+                        );
+                        setSelectedAbsence(null);
+                        await reload();
+                        setMessage("Abwesenheit storniert.");
+                      } catch (err) {
+                        setMessage(
+                          err instanceof Error
+                            ? err.message
+                            : "Abwesenheit konnte nicht storniert werden.",
+                        );
+                      }
+                    }}
+                    className="h-8 rounded-lg border border-[#e1e4ea] bg-white px-2.5 text-xs font-medium text-[#b42318] hover:bg-[#fff5f5]"
+                  >
+                    Stornieren
+                  </button>
+                </div>
               </div>
             </div>,
             document.body,

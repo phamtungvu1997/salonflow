@@ -169,15 +169,36 @@ export async function DELETE(request: Request) {
       throw new BookingError(422, "invalid", "Abwesenheits-ID fehlt.");
     }
     assertSalon(user, salonId);
-    if (!canManageSalon(user, salonId)) {
-      throw new BookingError(403, "forbidden", "Keine Berechtigung zum Löschen von Abwesenheiten.");
-    }
 
     const sql = getSql();
-    await sql`
-      DELETE FROM absences
+    const existing = await sql<{
+      id: string;
+      staff_id: string;
+      starts_at: Date;
+      ends_at: Date;
+      reason: string | null;
+    }[]>`
+      SELECT id, staff_id, starts_at, ends_at, reason
+      FROM absences
       WHERE id = ${id} AND salon_id = ${salonId}
     `;
+
+    await sql.begin(async (tx) => {
+      await tx`
+        DELETE FROM absences
+        WHERE id = ${id} AND salon_id = ${salonId}
+      `;
+      if (existing[0]) {
+        await tx`
+          DELETE FROM calendar_events
+          WHERE salon_id = ${salonId}
+            AND kind = 'absence'
+            AND description = ${existing[0].reason ?? ""}
+            AND start_at = ${existing[0].starts_at}
+            AND end_at = ${existing[0].ends_at}
+        `.catch(() => {});
+      }
+    });
 
     return Response.json({ deleted: true });
   } catch (error) {

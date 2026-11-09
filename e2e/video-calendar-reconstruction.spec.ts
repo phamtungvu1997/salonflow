@@ -72,12 +72,14 @@ test("Video-Ablauf: Sonntag, Tageswechsel, Wochenansicht, Mitarbeiter-Fokus, Pop
   await page.getByTestId("week-day-header-2026-11-09").click();
   await expect(page.getByTestId("calendar-day-grid")).toBeVisible();
 
-  // State 7: Click Unavailability Block -> Absence Popover
+  // State 7: Click Unavailability Block -> Absence Popover (includes Stornieren button)
   await page.getByTestId("absence-abs_demo_julia_1").click();
   await expect(page.getByTestId("absence-popover")).toBeVisible();
   await expect(page.getByTestId("absence-popover")).toContainText(
     "Julia Krüger ist nicht verfügbar",
   );
+  await expect(page.getByTestId("absence-cancel")).toBeVisible();
+  await expect(page.getByTestId("absence-cancel")).toHaveText("Stornieren");
   await page.screenshot({ path: "test-results/video-state-7-absence-popover.png" });
   await page.getByTestId("absence-popover").getByRole("button", { name: "Schließen" }).click();
 

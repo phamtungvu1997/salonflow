@@ -248,6 +248,11 @@ const samples = [
   ["appt_demo_21", "staff_julia", "cust_hannah", "svc_shellac", "Shellac", 60, 4200, "2026-11-14T11:00:00+01:00", "2026-11-14T12:00:00+01:00"],
 ];
 
+// Reset demo appointments cleanly before inserting canonical samples
+await sql`DELETE FROM resource_allocations WHERE appointment_id LIKE 'appt_demo_%'`.catch(() => {});
+await sql`DELETE FROM appointment_services WHERE appointment_id LIKE 'appt_demo_%'`.catch(() => {});
+await sql`DELETE FROM appointments WHERE id LIKE 'appt_demo_%'`.catch(() => {});
+
 for (const [id, staffId, customerId, , title, duration, price, start, end] of samples) {
   const overlap = await sql`
     SELECT 1 FROM resource_allocations
@@ -273,17 +278,6 @@ for (const [id, staffId, customerId, , title, duration, price, start, end] of sa
     ON CONFLICT (id) DO NOTHING
   `;
 }
-
-await sql`
-  UPDATE appointments
-  SET status = 'booked', version = 1
-  WHERE id LIKE 'appt_demo_%'
-`;
-await sql`
-  UPDATE resource_allocations
-  SET active = true
-  WHERE id LIKE 'alloc_appt_demo_%'
-`;
 
 // Sample unavailability blocks matching the reference video ("Julia is not available")
 const demoAbsences = [
