@@ -28,7 +28,7 @@ export function SalonProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
     async function loadSalons() {
       try {
         let response = await fetch("/api/salons");
@@ -44,11 +44,11 @@ export function SalonProvider({ children }: { children: ReactNode }) {
           response = await fetch("/api/salons");
         }
         if (!response.ok) {
-          if (!cancelled) setReady(true);
+          if (active) setReady(true);
           return;
         }
         const body = (await response.json()) as { salons: SalonOption[] };
-        if (cancelled) return;
+        if (!active) return;
         setSalons(body.salons);
         setActiveSalonId((current) => {
           if (current && body.salons.some((s) => s.id === current)) return current;
@@ -57,12 +57,12 @@ export function SalonProvider({ children }: { children: ReactNode }) {
         });
         setReady(true);
       } catch {
-        if (!cancelled) setReady(true);
+        if (active) setReady(true);
       }
     }
     void loadSalons();
     return () => {
-      cancelled = true;
+      active = false;
     };
   }, [pathname]);
 

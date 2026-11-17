@@ -7,6 +7,7 @@ export default defineConfig({
     include: [
       "src/server/booking.integration.test.ts",
       "src/server/events.integration.test.ts",
+      "src/server/ai-receptionist/ai-receptionist.integration.test.ts",
     ],
   },
   resolve: {

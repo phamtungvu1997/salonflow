@@ -1,6 +1,7 @@
 "use client";
 
 import { Moon, Search, Sun } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 import { SalonProvider, useSalon } from "@/features/salons/salon-context";
@@ -12,6 +13,11 @@ import { SalonSelector } from "./salon-selector";
 type AppShellProps = {
   children: React.ReactNode;
 };
+
+function isPublicBookingPath(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return pathname === "/b" || pathname.startsWith("/b/") || pathname === "/embed" || pathname.startsWith("/embed/");
+}
 
 function AppShellInner({ children }: AppShellProps) {
   const [collapsed, setCollapsed] = useState(false);
@@ -95,6 +101,10 @@ function AppShellInner({ children }: AppShellProps) {
 }
 
 export function AppShell({ children }: AppShellProps) {
+  const pathname = usePathname();
+  if (isPublicBookingPath(pathname)) {
+    return <>{children}</>;
+  }
   return (
     <SalonProvider>
       <AppShellInner>{children}</AppShellInner>

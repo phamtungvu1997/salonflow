@@ -1,6 +1,8 @@
 import {
+  Bot,
   CalendarDays,
   Megaphone,
+  Plug,
   Settings,
   Users,
   type LucideIcon,
@@ -37,5 +39,17 @@ export const primaryNav: NavItem[] = [
     label: "Einstellungen",
     icon: Settings,
     description: "Salon und Kalender",
+  },
+  {
+    href: "/integrationen",
+    label: "Integrationen",
+    icon: Plug,
+    description: "Kanäle und Anbieter verbinden",
+  },
+  {
+    href: "/ki-rezeption",
+    label: "KI-Rezeption",
+    icon: Bot,
+    description: "KI-gestützte Terminannahme",
   },
 ];

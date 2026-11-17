@@ -1,7 +1,25 @@
 # SalonFlow — macOS Development Handoff (`docs/DEV_HANDOFF.md`)
 
-**Handoff Date:** 2026-11-09  
+**Handoff Date:** 2026-11-17  
 **Governing Spec:** [`docs/MASTER_ARCHITECTURE.md`](MASTER_ARCHITECTURE.md) (V2) & [`AGENTS.md`](../AGENTS.md)
+
+## Current work for the Mac (2026-11-17)
+
+Branch: `feat/ai-booking-simulator`  
+Remote: `https://github.com/phamtungvu1997/salonflow.git`
+
+This branch has the calendar, the online-booking work in progress, and the KI-Rezeption simulator. WhatsApp, Instagram, and TikTok share that simulator. Live sending stays off.
+
+On the Mac, after the steps in section 6:
+
+1. Open http://localhost:3000/ki-rezeption
+2. Log in with `owner@salonflow.example` / `salonflow-dev` if the page asks.
+3. Choose **Kanal** (WhatsApp, Instagram, or TikTok), keep Sophie Wagner, then **Chat starten**.
+4. A booking is written only after **Freigeben und buchen**.
+
+Do not copy `.pgdata` from Windows. The Mac creates its own database with `npm run db:prepare`.
+
+If `npm run db:prepare` prints the database URL and the terminal stays open, leave that window running. Start `npm run dev` in a second Terminal window.
 
 ---
 
@@ -104,7 +122,7 @@ SalonFlow uses `embedded-postgres`, which automatically downloads and manages a 
 # 1. Clone the repository and check out the latest working branch
 git clone https://github.com/phamtungvu1997/salonflow.git
 cd salonflow
-git checkout feat/ns-015-appointment-interactions
+git checkout feat/ai-booking-simulator
 
 # 2. Ensure Node.js 20+ is active, then install dependencies
 npm install

@@ -348,8 +348,13 @@ export function SettingsWorkspace({
         {!loading && activeSection === "online-bookings" ? (
           <OnlineBookingsSection
             key={`online_${salonId}_${settings.onlineIntervalMinutes}`}
+            salonId={salonId}
+            salonName={activeSalonName}
             settings={settings}
+            services={services}
+            staff={staff}
             onSave={saveSalonSettingsPatch}
+            onOpenSection={setActiveSection}
           />
         ) : null}
 

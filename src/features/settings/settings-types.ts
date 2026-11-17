@@ -60,6 +60,30 @@ export interface SalonSettingsRecord {
   onlineIntervalMinutes: number;
   onlineAdvanceMonths: number;
   onlineWidgetColor: string;
+  onlineWidgetLanguage?: string;
+  onlineBookingOption?: "bookings" | "requests";
+  onlineCustomerScope?: "all" | "existing";
+  onlineStaffChoiceRequired?: boolean;
+  onlineStaffFirstStep?: boolean;
+  onlineAssignInOrder?: boolean;
+  onlineAllowMultiService?: boolean;
+  onlineHighlightTopServices?: boolean;
+  onlineTopServiceIds?: string[];
+  onlineMinNoticeMinutes?: number;
+  onlinePreventGaps?: boolean;
+  onlineAllowWaitlist?: boolean;
+  onlineRequestAddress?: boolean;
+  onlineRequestBirthDate?: boolean;
+  onlineAllowNewsletter?: boolean;
+  onlineShowTermsLink?: boolean;
+  onlineShowPrivacyLink?: boolean;
+  onlineScheduleView?: "week" | "month_week";
+  onlineAllowCheckAppointments?: boolean;
+  onlineShowCustomAlert?: boolean;
+  onlineCustomAlertText?: string;
+  onlineAnalyticsId?: string;
+  onlineShareMode?: "link" | "button" | "embed";
+  onlineButtonPosition?: "right" | "left";
 }
 
 export interface SettingsStats {

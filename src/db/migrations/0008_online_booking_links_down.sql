@@ -1,0 +1,29 @@
+DROP TABLE IF EXISTS public_booking_requests;
+DROP INDEX IF EXISTS public_booking_links_salon_idx;
+DROP TABLE IF EXISTS public_booking_links;
+
+ALTER TABLE salon_settings
+  DROP COLUMN IF EXISTS online_widget_language,
+  DROP COLUMN IF EXISTS online_booking_option,
+  DROP COLUMN IF EXISTS online_customer_scope,
+  DROP COLUMN IF EXISTS online_staff_choice_required,
+  DROP COLUMN IF EXISTS online_staff_first_step,
+  DROP COLUMN IF EXISTS online_assign_in_order,
+  DROP COLUMN IF EXISTS online_allow_multi_service,
+  DROP COLUMN IF EXISTS online_highlight_top_services,
+  DROP COLUMN IF EXISTS online_top_service_ids,
+  DROP COLUMN IF EXISTS online_min_notice_minutes,
+  DROP COLUMN IF EXISTS online_prevent_gaps,
+  DROP COLUMN IF EXISTS online_allow_waitlist,
+  DROP COLUMN IF EXISTS online_request_address,
+  DROP COLUMN IF EXISTS online_request_birth_date,
+  DROP COLUMN IF EXISTS online_allow_newsletter,
+  DROP COLUMN IF EXISTS online_show_terms_link,
+  DROP COLUMN IF EXISTS online_show_privacy_link,
+  DROP COLUMN IF EXISTS online_schedule_view,
+  DROP COLUMN IF EXISTS online_allow_check_appointments,
+  DROP COLUMN IF EXISTS online_show_custom_alert,
+  DROP COLUMN IF EXISTS online_custom_alert_text,
+  DROP COLUMN IF EXISTS online_analytics_id,
+  DROP COLUMN IF EXISTS online_share_mode,
+  DROP COLUMN IF EXISTS online_button_position;
