@@ -710,7 +710,7 @@ export async function computePublicAvailableSlots(
     );
   }
 
-  const weekday = isoWeekday(input.date);
+  const weekday = isoWeekday(zonedDateTimeToUtc(input.date, "12:00"));
   const bounds = dayBounds(input.date);
   const candidateIds = candidateStaff.map((s) => s.id);
   if (candidateIds.length === 0) {

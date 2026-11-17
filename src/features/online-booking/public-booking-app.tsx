@@ -1,6 +1,6 @@
 "use client";
 
-import { Calendar, Check, ChevronLeft, Clock, MapPin, ShieldCheck, User } from "lucide-react";
+import { Calendar, Check, Clock, MapPin, ShieldCheck, User } from "lucide-react";
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 
 import { berlinToday } from "@/features/calendar/calendar-date";

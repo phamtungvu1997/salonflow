@@ -371,16 +371,11 @@ export async function handleCustomerMessage(
 
   const catalog = await loadSalonCatalog(sql, conversation.salonId);
   const intent = parseCustomerMessage(text, catalog);
-  if (
-    intent.confirmation === true &&
-    (conversation.state === "CONFIRMED" || conversation.state === "AWAITING_STAFF_APPROVAL")
-  ) {
+  if (intent.confirmation === true && conversation.state === "AWAITING_STAFF_APPROVAL") {
     pushMessage(
       conversation,
       "assistant",
-      conversation.state === "CONFIRMED"
-        ? "Der Termin ist schon fest eingetragen."
-        : "Liegt schon zur Freigabe bei der Kollegin.",
+      "Liegt schon zur Freigabe bei der Kollegin.",
     );
     await saveConversation(sql, conversation);
     return toPublicView(conversation);
