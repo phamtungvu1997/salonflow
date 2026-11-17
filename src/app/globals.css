@@ -33,3 +33,79 @@
     );
   }
 }
+
+/* Dark mode covers the many hard-coded light surfaces. Colored appointment chips keep their ink. */
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-\[\#ffffff\],
+html.dark .bg-\[\#fafbfc\],
+html.dark .bg-\[\#fff\] {
+  background-color: var(--card);
+}
+
+html.dark .bg-\[\#f4f5f7\],
+html.dark .bg-\[\#f3f5f7\],
+html.dark .bg-\[\#efeae2\],
+html.dark .bg-\[\#f7f2f5\],
+html.dark .bg-\[\#f3f3f3\],
+html.dark .bg-slate-100,
+html.dark .bg-\[\#f4f5f7\]\/80 {
+  background-color: var(--background);
+}
+
+html.dark .bg-slate-200,
+html.dark .bg-slate-200\/80,
+html.dark .bg-\[\#eef0f3\],
+html.dark .bg-\[\#f0f4ff\],
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-\[\#f4f5f7\]:hover,
+html.dark .hover\:bg-\[\#eef0f3\]:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: var(--secondary);
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-\[\#1c1e21\],
+html.dark .text-\[\#111827\],
+html.dark .hover\:text-\[\#1c1e21\]:hover {
+  color: var(--foreground);
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark .text-\[\#6d7480\],
+html.dark .text-\[\#5f7084\],
+html.dark .text-\[\#8b919a\],
+html.dark .text-\[\#98a0aa\] {
+  color: var(--muted-foreground);
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-\[\#e1e4ea\],
+html.dark .border-\[\#e6e8ee\],
+html.dark .border-\[\#eef0f3\],
+html.dark .border-\[\#c5cad3\],
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border);
+}
+
+html.dark [style*="background"] .text-\[\#1c1e21\],
+html.dark [style*="background"].text-\[\#1c1e21\] {
+  color: #1c1e21;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color: var(--foreground);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--muted-foreground);
+}

@@ -2,7 +2,7 @@
 
 import { Moon, Search, Sun } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { SalonProvider, useSalon } from "@/features/salons/salon-context";
 import { cn } from "@/lib/utils";
@@ -24,8 +24,24 @@ function AppShellInner({ children }: AppShellProps) {
   const [themeTone, setThemeTone] = useState<"light" | "dim">("light");
   const { activeSalon } = useSalon();
 
+  useEffect(() => {
+    const saved = window.localStorage.getItem("salonflow-theme");
+    if (saved === "dim" || saved === "light") setThemeTone(saved);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", themeTone === "dim");
+    window.localStorage.setItem("salonflow-theme", themeTone);
+  }, [themeTone]);
+
   return (
-    <div className="flex min-h-screen bg-[radial-gradient(circle_at_top_right,_#f0e6e9_0%,_transparent_34%),radial-gradient(circle_at_bottom_left,_#e7eee9_0%,_transparent_42%),var(--background)]">
+    <div
+      className={cn(
+        "flex min-h-screen bg-background",
+        themeTone === "light" &&
+          "bg-[radial-gradient(circle_at_top_right,_#f0e6e9_0%,_transparent_34%),radial-gradient(circle_at_bottom_left,_#e7eee9_0%,_transparent_42%),var(--background)]",
+      )}
+    >
       <div className="sticky top-0 h-screen shrink-0">
         <AppSidebar
           collapsed={collapsed}
@@ -53,28 +69,30 @@ function AppShellInner({ children }: AppShellProps) {
               <Search className="h-4 w-4" />
             </a>
             <div
-              className="inline-flex h-8 items-center rounded-lg border border-[#e1e4ea] bg-[#f4f5f7] p-0.5"
+              className="inline-flex h-8 items-center rounded-lg border border-border bg-muted p-0.5"
               role="group"
               aria-label="Darstellung"
             >
               <button
                 type="button"
                 aria-label="Helle Darstellung"
+                aria-pressed={themeTone === "light"}
                 onClick={() => setThemeTone("light")}
                 className={cn(
-                  "flex h-6 w-7 items-center justify-center rounded-md text-[#6d7480]",
-                  themeTone === "light" && "bg-white text-[#1c1e21] shadow-xs",
+                  "flex h-6 w-7 items-center justify-center rounded-md text-muted-foreground",
+                  themeTone === "light" && "bg-card text-foreground shadow-xs",
                 )}
               >
                 <Sun className="h-3.5 w-3.5" />
               </button>
               <button
                 type="button"
-                aria-label="Gedämpfte Darstellung"
+                aria-label="Dunkle Darstellung"
+                aria-pressed={themeTone === "dim"}
                 onClick={() => setThemeTone("dim")}
                 className={cn(
-                  "flex h-6 w-7 items-center justify-center rounded-md text-[#6d7480]",
-                  themeTone === "dim" && "bg-white text-[#1c1e21] shadow-xs",
+                  "flex h-6 w-7 items-center justify-center rounded-md text-muted-foreground",
+                  themeTone === "dim" && "bg-card text-foreground shadow-xs",
                 )}
               >
                 <Moon className="h-3.5 w-3.5" />

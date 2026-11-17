@@ -55,3 +55,28 @@
   --cal-staff-min: 145px;
   --cal-time-width: 56px;
 }
+
+html.dark {
+  color-scheme: dark;
+  --background: #12161c;
+  --foreground: #e7edf4;
+  --card: #1c2430;
+  --card-foreground: #e7edf4;
+  --popover: #1c2430;
+  --popover-foreground: #e7edf4;
+  --primary: #e7edf4;
+  --primary-foreground: #12161c;
+  --secondary: #2a3340;
+  --secondary-foreground: #e7edf4;
+  --muted: #242c38;
+  --muted-foreground: #a8b3c2;
+  --accent: #3a2c33;
+  --accent-foreground: #f6e4ea;
+  --border: #343e4c;
+  --input: #343e4c;
+  --ring: #d4a0ad;
+  --salon-ink: #e7edf4;
+  --salon-slate: #a8b3c2;
+  --salon-mist: #12161c;
+  --salon-hatch: rgba(168, 179, 194, 0.2);
+}

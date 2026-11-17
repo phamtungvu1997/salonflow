@@ -16,6 +16,7 @@ On the Mac, after the steps in section 6:
 2. Log in with `owner@salonflow.example` / `salonflow-dev` if the page asks.
 3. Choose **Kanal** (WhatsApp, Instagram, or TikTok), keep Sophie Wagner, then **Chat starten**.
 4. A booking is written only after **Freigeben und buchen**.
+5. The moon button in the top bar switches the internal app to dark mode. The sun button switches back. The choice is stored in this browser.
 
 Do not copy `.pgdata` from Windows. The Mac creates its own database with `npm run db:prepare`.
 

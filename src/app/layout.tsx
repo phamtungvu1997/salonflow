@@ -39,6 +39,14 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="de">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html:
+              "try{if(localStorage.getItem('salonflow-theme')==='dim')document.documentElement.classList.add('dark')}catch(e){}",
+          }}
+        />
+      </head>
       <body className={`${sourceSans.variable} ${fraunces.variable}`}>
         <AppShell>{children}</AppShell>
       </body>
