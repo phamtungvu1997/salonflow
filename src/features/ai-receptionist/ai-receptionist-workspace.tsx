@@ -39,6 +39,9 @@ export function AiReceptionistWorkspace() {
     sendOwnerReply,
   } = useAiChat(salonId);
   const [channelFilter, setChannelFilter] = useState<SimulatorChannel | "all">("all");
+  const [enabledChannels, setEnabledChannels] = useState<SimulatorChannel[]>(
+    SIMULATOR_CHANNELS.map((item) => item.id),
+  );
   const [desk, setDesk] = useState<"overview" | "thread">("overview");
   const [commentText, setCommentText] = useState("Was kostet Shellac?");
   const [fromEmail, setFromEmail] = useState("");
@@ -52,6 +55,31 @@ export function AiReceptionistWorkspace() {
     void loadCustomers();
     void loadInbox();
   }, [loadCustomers, loadInbox]);
+
+  useEffect(() => {
+    if (!salonId) return;
+    let cancelled = false;
+    void fetch(`/api/integrations?salonId=${encodeURIComponent(salonId)}`)
+      .then(async (response) => {
+        if (!response.ok) return;
+        const body = (await response.json()) as {
+          channels?: { id: SimulatorChannel; simulatorEnabled: boolean }[];
+        };
+        if (cancelled) return;
+        const enabled = (body.channels ?? [])
+          .filter((item) => item.simulatorEnabled)
+          .map((item) => item.id)
+          .filter((id): id is SimulatorChannel =>
+            SIMULATOR_CHANNELS.some((item) => item.id === id),
+          );
+        setEnabledChannels(enabled);
+        if (enabled.length > 0 && !enabled.includes(channel)) setChannel(enabled[0]);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [salonId, channel, setChannel]);
 
   useEffect(() => {
     if (selectedCustomer?.email) setFromEmail(selectedCustomer.email);
@@ -113,7 +141,7 @@ export function AiReceptionistWorkspace() {
                 disabled={Boolean(conversation)}
                 onChange={(e) => setChannel(e.target.value as typeof channel)}
               >
-                {SIMULATOR_CHANNELS.map((item) => (
+                {(enabledChannels.length ? SIMULATOR_CHANNELS.filter((item) => enabledChannels.includes(item.id)) : SIMULATOR_CHANNELS).map((item) => (
                   <option key={item.id} value={item.id}>
                     {item.label}
                   </option>

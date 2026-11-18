@@ -1,114 +1,168 @@
 "use client";
 
 import { Mail, MessageCircle, Phone, Plug } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 
-const CHANNELS = [
-  {
-    id: "whatsapp",
-    name: "WhatsApp Business",
-    status: "Vorbereitung",
-    note: "Live gesperrt, bis der Simulator stabil ist · kein Versand",
-    icon: MessageCircle,
-  },
-  {
-    id: "instagram",
-    name: "Instagram Direct",
-    status: "Vorbereitung",
-    note: "Gleicher Simulator wie WhatsApp · Live-Versand gesperrt",
-    icon: MessageCircle,
-  },
-  {
-    id: "messenger",
-    name: "Facebook Messenger",
-    status: "Vorbereitung",
-    note: "Meta Business Messaging · noch nicht verbunden",
-    icon: MessageCircle,
-  },
-  {
-    id: "tiktok",
-    name: "TikTok Direct",
-    status: "Vorbereitung",
-    note: "Gleicher Simulator · offizielle TikTok-Nachrichten noch nicht freigegeben",
-    icon: MessageCircle,
-  },
-  {
-    id: "email",
-    name: "E-Mail",
-    status: "Geplant",
-    note: "Thread-sichere Adapter · kein Versand aktiv",
-    icon: Mail,
-  },
-  {
-    id: "phone",
-    name: "Telefonie",
-    status: "Geplant",
-    note: "Nur eingehende Anrufe nach Freigabe",
-    icon: Phone,
-  },
-] as const;
+import { useSalon } from "@/features/salons/salon-context";
 
-export function IntegrationsWorkspace() {
+type ChannelState = {
+  id: string;
+  name: string;
+  note: string;
+  simulatorSupported: boolean;
+  simulatorEnabled: boolean;
+  liveLocked: boolean;
+};
+
+const ICONS: Record<string, typeof Mail> = {
+  email: Mail,
+  phone: Phone,
+};
+
+export function IntegrationsWorkspace({ embedded = false }: { embedded?: boolean }) {
+  const { activeSalon, ready } = useSalon();
+  const salonId = activeSalon?.id ?? null;
+  const [channels, setChannels] = useState<ChannelState[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    if (!salonId) return;
+    const response = await fetch(`/api/integrations?salonId=${encodeURIComponent(salonId)}`);
+    const body = (await response.json()) as { channels?: ChannelState[]; error?: string };
+    if (!response.ok) {
+      setError(body.error ?? "Integrationen konnten nicht geladen werden.");
+      return;
+    }
+    setChannels(body.channels ?? []);
+    setError(null);
+  }, [salonId]);
+
+  useEffect(() => {
+    void load().catch(() => setError("Integrationen konnten nicht geladen werden."));
+  }, [load]);
+
+  async function toggle(channel: ChannelState) {
+    if (!salonId || !channel.simulatorSupported || pending) return;
+    const next = !channel.simulatorEnabled;
+    setPending(channel.id);
+    setChannels((current) =>
+      current.map((item) => (item.id === channel.id ? { ...item, simulatorEnabled: next } : item)),
+    );
+    try {
+      const response = await fetch("/api/integrations", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ salonId, channel: channel.id, simulatorEnabled: next }),
+      });
+      const body = (await response.json()) as { channels?: ChannelState[]; error?: string };
+      if (!response.ok) {
+        setError(body.error ?? "Der Kanal konnte nicht gespeichert werden.");
+        await load();
+        return;
+      }
+      setChannels(body.channels ?? []);
+      setError(null);
+    } catch {
+      setError("Der Kanal konnte nicht gespeichert werden.");
+      await load();
+    } finally {
+      setPending(null);
+    }
+  }
+
   return (
     <div
       data-testid="page-integrationen"
-      className="min-h-[calc(100vh-52px)] bg-[#f4f5f7] p-6 lg:p-8"
+      className={embedded ? "space-y-4" : "min-h-[calc(100vh-52px)] bg-background p-4 md:p-6"}
     >
-      <div className="mx-auto max-w-5xl space-y-6">
-        <header className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-xs">
+      <div className={embedded ? "space-y-4" : "mx-auto max-w-5xl space-y-4"}>
+        <header className="rounded-lg border border-border bg-card px-5 py-4">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex size-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
+              <div className="mt-0.5 flex size-10 items-center justify-center rounded-md bg-muted text-foreground">
                 <Plug className="size-5" aria-hidden />
               </div>
               <div>
-                <h1 className="text-2xl font-bold text-slate-900">Integrationen</h1>
-                <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                  Kanäle für den späteren Kundendialog vorbereiten. Es werden noch keine
-                  Kundenkonten verbunden und keine Nachrichten versendet.
+                <h1 className="text-lg font-medium tracking-tight text-foreground">Integrationen</h1>
+                <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+                  {activeSalon
+                    ? `${activeSalon.name}: Simulator für den Kundendialog ein- oder ausschalten. Live-Versand bleibt gesperrt.`
+                    : ready
+                      ? "Kein Salon geladen."
+                      : "Salon wird geladen."}
                 </p>
               </div>
             </div>
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
-              Architektur · Keine Live-Verbindung
+            <span className="rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] font-medium text-foreground">
+              Kein Live-Versand
             </span>
           </div>
         </header>
 
-        <section
-          aria-label="Geplante Kanäle"
-          className="grid gap-3 sm:grid-cols-2"
-        >
-          {CHANNELS.map((channel) => {
-            const Icon = channel.icon;
+        {error ? (
+          <p className="rounded-md border border-[#f0c7c4] bg-[#fdf4f3] px-3 py-2 text-sm text-[#8a2e28]" role="alert">
+            {error}
+          </p>
+        ) : null}
+
+        <section aria-label="Kanäle" className="grid gap-3 sm:grid-cols-2">
+          {channels.map((channel) => {
+            const Icon = ICONS[channel.id] ?? MessageCircle;
             return (
               <article
                 key={channel.id}
                 data-testid={`integration-card-${channel.id}`}
-                className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs"
+                className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4"
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex size-9 items-center justify-center rounded-md bg-slate-100 text-slate-700">
-                      <Icon className="size-4" aria-hidden />
-                    </div>
-                    <div>
-                      <h2 className="text-sm font-semibold text-slate-900">{channel.name}</h2>
-                      <p className="mt-1 text-xs leading-5 text-slate-600">{channel.note}</p>
-                    </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex size-9 items-center justify-center rounded-md bg-muted text-foreground">
+                    <Icon className="size-4" aria-hidden />
                   </div>
-                  <span className="shrink-0 rounded-full border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-slate-600">
-                    {channel.status}
-                  </span>
+                  <div className="min-w-0">
+                    <h2 className="text-sm font-medium text-foreground">{channel.name}</h2>
+                    <p className="mt-1 text-xs leading-5 text-muted-foreground">{channel.note}</p>
+                  </div>
                 </div>
+                <div className="flex items-center justify-between gap-3 border-t border-border pt-3">
+                  <div>
+                    <p className="text-xs font-medium text-foreground">
+                      {channel.simulatorSupported ? "Simulator" : "Nicht verfügbar"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Live-Versand gesperrt</p>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={channel.simulatorEnabled}
+                    aria-label={`${channel.name} Simulator`}
+                    data-testid={`integration-switch-${channel.id}`}
+                    disabled={!channel.simulatorSupported || pending === channel.id || !salonId}
+                    onClick={() => void toggle(channel)}
+                    className={`relative h-6 w-11 shrink-0 rounded-full transition-colors disabled:opacity-40 ${
+                      channel.simulatorEnabled ? "bg-foreground" : "bg-muted"
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-0.5 size-5 rounded-full bg-background shadow-sm transition-transform ${
+                        channel.simulatorEnabled ? "translate-x-5" : "translate-x-0.5"
+                      }`}
+                    />
+                  </button>
+                </div>
+                {channel.simulatorEnabled ? (
+                  <Link
+                    href="/ki-rezeption"
+                    className="text-xs font-medium text-foreground underline-offset-2 hover:underline"
+                  >
+                    Im Kundendialog testen
+                  </Link>
+                ) : null}
               </article>
             );
           })}
         </section>
-
-        <p className="text-xs text-slate-500">
-          Alle Buchungen laufen weiterhin ausschließlich über die SalonFlow Booking Engine.
-          Externe Anbieter werden erst nach Owner-Freigabe angebunden.
-        </p>
       </div>
     </div>
   );

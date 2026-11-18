@@ -212,7 +212,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
       { id: "export", label: "Datenexport" },
       { id: "users", label: "Benutzerkonten" },
       { id: "billing", label: "Abrechnung" },
-      { id: "integrations", label: "Integrationen", deferredV1: true },
+      { id: "integrations", label: "Integrationen" },
     ],
   },
   {

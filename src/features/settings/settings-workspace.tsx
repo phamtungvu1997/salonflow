@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 
+import { IntegrationsWorkspace } from "@/features/integrations/integrations-workspace";
 import { useSalon } from "@/features/salons/salon-context";
 
 import { BillingSection } from "./billing-section";
@@ -383,15 +384,14 @@ export function SettingsWorkspace({
           <WidgetsSection salonId={salonId} section={activeSection} />
         ) : null}
 
-        {!loading &&
-        (activeSection === "integrations" || activeSection === "forms") ? (
+        {!loading && activeSection === "integrations" ? (
+          <IntegrationsWorkspace embedded />
+        ) : null}
+
+        {!loading && activeSection === "forms" ? (
           <DeferredV1Section
-            title={
-              SETTINGS_NAV_GROUPS.flatMap((g) => g.items).find(
-                (i) => i.id === activeSection,
-              )?.label ?? "V2-Modul"
-            }
-            reason="Dieser Bereich wurde im Salonized-Referenzvideo dokumentiert, gehört jedoch zu den in V1 ausgeschlossenen POS-, Rechnungs-, MwSt.- oder Marketing-Widget-Funktionen."
+            title="Formulare"
+            reason="Dieser Bereich wurde im Salonized-Referenzvideo dokumentiert und bleibt in dieser Version geschlossen."
           />
         ) : null}
       </div>

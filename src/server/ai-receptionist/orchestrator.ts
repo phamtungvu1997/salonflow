@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import type { Db } from "@/server/db";
+import { assertChannelSimulatorEnabled } from "@/server/integrations";
 import { ensureDefaultPublicBookingLink } from "@/server/online-booking";
 import { BookingError } from "@/server/time";
 
@@ -219,6 +220,8 @@ export async function startConversation(
     emailBody?: string;
   },
 ): Promise<ConversationPublicView> {
+  const channel = input.emailBody ? "email" : input.channel ?? "whatsapp";
+  await assertChannelSimulatorEnabled(sql, input.salonId, channel);
   let customerId = input.customerId;
   if (input.fromEmail) {
     const byEmail = await sql<{ id: string }[]>`
@@ -254,7 +257,7 @@ export async function startConversation(
     salonId: input.salonId,
     customerId: customer[0].id,
     customerName: customer[0].display_name,
-    channel: input.emailBody ? "email" : input.channel ?? "whatsapp",
+    channel,
     actorUserId: input.actorUserId,
     state: "NEW_REQUEST",
     messages: [],
