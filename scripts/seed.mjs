@@ -8,8 +8,9 @@ function hashPassword(password) {
   return `scrypt$${salt}$${hash}`;
 }
 
-await startLocalPostgres();
-const sql = postgres(databaseUrl(), { max: 1 });
+const remote = process.env.REMOTE_DATABASE === "1" && process.env.DATABASE_URL;
+if (!remote) await startLocalPostgres();
+const sql = postgres(remote ? process.env.DATABASE_URL : databaseUrl(), { max: 1 });
 const passwordHash = hashPassword(process.env.DEV_SEED_PASSWORD ?? "salonflow-dev");
 
 const salons = [

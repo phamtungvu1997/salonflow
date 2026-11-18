@@ -1,8 +1,9 @@
 import postgres from "postgres";
 import { databaseUrl, startLocalPostgres } from "./postgres-local.mjs";
 
-await startLocalPostgres();
-const sql = postgres(databaseUrl(), { max: 1 });
+const remote = process.env.REMOTE_DATABASE === "1" && process.env.DATABASE_URL;
+if (!remote) await startLocalPostgres();
+const sql = postgres(remote ? process.env.DATABASE_URL : databaseUrl(), { max: 1 });
 const salonId = "salon_jeannie";
 
 await sql`UPDATE services SET active = false WHERE name ~ '^Shellac [0-9]+$' OR name LIKE '%Test%'`;

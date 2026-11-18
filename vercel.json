@@ -1,0 +1,4 @@
+{
+  "buildCommand": "node scripts/migrate-remote.mjs && next build",
+  "regions": ["fra1"]
+}
