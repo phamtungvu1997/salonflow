@@ -1,6 +1,7 @@
 import {
   Bot,
   CalendarDays,
+  LifeBuoy,
   Megaphone,
   Plug,
   Settings,
@@ -51,5 +52,11 @@ export const primaryNav: NavItem[] = [
     label: "Kundendialog",
     icon: Bot,
     description: "Nachrichten und Freigaben",
+  },
+  {
+    href: "/support",
+    label: "Support",
+    icon: LifeBuoy,
+    description: "Hilfe, Wünsche und Nachrichten",
   },
 ];

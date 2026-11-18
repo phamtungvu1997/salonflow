@@ -7,6 +7,7 @@ const routes = [
   { path: "/einstellungen", testId: "page-einstellungen", label: "Einstellungen" },
   { path: "/integrationen", testId: "page-integrationen", label: "Integrationen" },
   { path: "/ki-rezeption", testId: "page-ki-rezeption", label: "Kundendialog" },
+  { path: "/support", testId: "page-support", label: "Support" },
 ] as const;
 
 test.describe("Hauptnavigation", () => {

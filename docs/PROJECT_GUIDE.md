@@ -39,6 +39,7 @@ A saved appointment keeps the service name, duration, and price from that moment
 | Settings | `/einstellungen` | Services, staff, hours, holidays, rooms, online booking, accounts, software billing |
 | Marketing | `/marketing` | Last-minute discount, dynamic price windows, discount codes, waiting list |
 | Kundendialog | `/ki-rezeption` | Owner dashboard for chats, approvals, nail photos, and complaints |
+| Support | `/support` | Searchable German guides, salon feature wishes, and internal messages |
 | Public booking | `/b/{token}` | Customer link. Embed form is `/embed/{token}` |
 
 Holidays for Hamburg are prefilled under **Einstellungen → Abwesenheiten**. A locked holiday writes one absence per active staff member from 08:00 to 20:00, so the calendar and the engine both close that day. Uncheck **Sperren** or delete the row to open it again.
@@ -96,6 +97,12 @@ The section is named **Kundendialog** and lives at `/ki-rezeption`. The first sc
 - A booking is stored only after **Freigeben und buchen**.
 
 The dashboard sorts work into three queues. A nail photo waits until you enter a price; **Angebot senden** writes that price back into the same WhatsApp, Instagram, TikTok, or email thread, with the booking link. A complaint offers Entschuldigung, a new appointment, 10 € goodwill, or a callback, and that choice is the reply in the same channel. Nothing is sent to a live account. The agent still does not invent a price from the photo.
+
+## Support-Zentrum
+
+`/support` is the in-app help desk. Search filters the German articles. A topic card limits the list. An article explains the real SalonFlow rule and links to the screen that does the work.
+
+A feature wish and the message button are stored for the active salon only. They are not sent to Intercom, email, or any other outside service.
 
 ## Checks
 

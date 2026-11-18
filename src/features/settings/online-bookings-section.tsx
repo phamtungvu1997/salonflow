@@ -254,7 +254,10 @@ export function OnlineBookingsSection({
         </div>
 
         {noticeText ? (
-          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-900">
+          <div
+            data-testid="online-bookings-saved-banner"
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-xs font-semibold text-emerald-900"
+          >
             {noticeText}
           </div>
         ) : null}
@@ -376,7 +379,12 @@ export function OnlineBookingsSection({
           </div>
         </Accordion>
 
-        <Accordion title="Zeitplan" open={open === "schedule"} onToggle={() => setOpen(open === "schedule" ? "main" : "schedule")}>
+        <Accordion
+          title="Zeitplan"
+          testId="online-accordion-schedule"
+          open={open === "schedule"}
+          onToggle={() => setOpen(open === "schedule" ? "main" : "schedule")}
+        >
           <SelectField label="Online-Buchungsintervall" value={interval} onChange={setInterval} options={[{ value: 15, label: "15 Min." }, { value: 30, label: "30 Min." }, { value: 60, label: "60 Min." }]} />
           <SelectField label="Mindestabstand zwischen Buchung und Terminbeginn" value={notice} onChange={setNotice} options={NOTICE_OPTIONS} />
           <SelectField label="Wie weit im Voraus online gebucht werden kann" value={advance} onChange={setAdvance} options={[{ value: 1, label: "1 Monat" }, { value: 3, label: "3 Monate" }, { value: 6, label: "6 Monate" }, { value: 12, label: "12 Monate" }]} />
@@ -525,17 +533,24 @@ function Accordion({
   open,
   onToggle,
   badge,
+  testId,
   children,
 }: {
   title: string;
   open: boolean;
   onToggle: () => void;
   badge?: string;
+  testId?: string;
   children: ReactNode;
 }) {
   return (
     <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xs">
-      <button type="button" onClick={onToggle} className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-900">
+      <button
+        type="button"
+        data-testid={testId}
+        onClick={onToggle}
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-bold text-slate-900"
+      >
         <span className="flex items-center gap-2">
           {open ? "▾" : "▸"} {title}
           {badge ? <span className="inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] text-white">{badge}</span> : null}
