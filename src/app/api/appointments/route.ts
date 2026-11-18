@@ -15,6 +15,7 @@ const createSchema = z.object({
   start: z.string(),
   notes: z.string().trim().max(2000).optional(),
   idempotencyKey: z.string().min(8).max(80).optional(),
+  resourceId: z.string().min(1).optional(),
 });
 
 export async function POST(request: Request) {

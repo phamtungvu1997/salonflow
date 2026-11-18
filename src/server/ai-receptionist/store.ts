@@ -44,6 +44,7 @@ function normalizeConversation(raw: AiConversation): AiConversation {
     preferenceHint: raw.preferenceHint ?? null,
     llmUsed: raw.llmUsed ?? false,
     channel: raw.channel ?? "whatsapp",
+    alerts: raw.alerts ?? [],
   };
 }
 
@@ -103,7 +104,50 @@ export function toPublicView(conversation: AiConversation): ConversationPublicVi
     preferenceHint: normalized.preferenceHint,
     llmUsed: normalized.llmUsed,
     lastError: normalized.lastError,
+    alerts: normalized.alerts,
   };
+}
+
+export async function listSalonConversations(
+  sql: Db,
+  salonId: string,
+): Promise<ConversationPublicView[]> {
+  await ensureTable(sql);
+  const rows = await sql<{ payload: AiConversation }[]>`
+    SELECT payload
+    FROM ai_sim_conversations
+    WHERE salon_id = ${salonId}
+    ORDER BY updated_at DESC
+    LIMIT 80
+  `;
+  const fromDb = rows.map((row) => normalizeConversation(row.payload));
+  const merged = new Map<string, AiConversation>();
+  for (const item of fromDb) merged.set(item.id, item);
+  for (const item of memoryStore().values()) {
+    if (item.salonId === salonId) {
+      const existing = merged.get(item.id);
+      if (!existing || existing.updatedAt < item.updatedAt) merged.set(item.id, item);
+    }
+  }
+  return [...merged.values()]
+    .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
+    .map(toPublicView);
+}
+
+export async function markOwnerAlertSeen(
+  sql: Db,
+  salonId: string,
+  conversationId: string,
+  alertId: string,
+): Promise<ConversationPublicView | null> {
+  const conversation = await getConversation(sql, conversationId);
+  if (!conversation || conversation.salonId !== salonId) return null;
+  conversation.alerts = (conversation.alerts ?? []).map((alert) =>
+    alert.id === alertId ? { ...alert, seenAt: new Date().toISOString() } : alert,
+  );
+  conversation.updatedAt = new Date().toISOString();
+  await saveConversation(sql, conversation);
+  return toPublicView(conversation);
 }
 
 /** Test helper — clears in-memory store (DB rows left for inspection). */

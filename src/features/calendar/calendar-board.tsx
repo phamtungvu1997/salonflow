@@ -987,26 +987,22 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       </div>
 
       {message ? <p className="mb-2 text-sm" data-testid="calendar-message">{message}</p> : null}
-      {events.length > 0 ? (
+      {events.some((eventItem) => eventItem.kind !== "absence") ? (
         <div className="mb-2 flex flex-wrap gap-1.5" data-testid="calendar-events-bar">
-          {events.map((eventItem) => {
-            const badge =
-              eventItem.kind === "absence"
-                ? "Abwesenheit"
-                : eventItem.kind === "chore"
-                  ? "Aufgabe"
-                  : "Notiz";
-            return (
+          {events
+            .filter((eventItem) => eventItem.kind !== "absence")
+            .map((eventItem) => (
               <span
                 key={eventItem.id}
                 data-testid={`calendar-event-${eventItem.id}`}
                 className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs"
               >
-                <span className="font-semibold text-muted-foreground">{badge}:</span>
+                <span className="font-semibold text-muted-foreground">
+                  {eventItem.kind === "chore" ? "Aufgabe" : "Notiz"}:
+                </span>
                 <span>{eventItem.description}</span>
               </span>
-            );
-          })}
+            ))}
         </div>
       ) : null}
 

@@ -161,6 +161,7 @@ export interface NationalHolidayRow {
   id: string;
   description: string;
   date: string;
+  enabled?: boolean;
 }
 
 export interface AbsenceRecord {

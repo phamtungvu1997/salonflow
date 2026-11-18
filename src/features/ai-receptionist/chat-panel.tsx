@@ -26,6 +26,12 @@ const CHANNEL_CHROME: Record<
     header: "bg-[#111111]",
     page: "bg-[#f3f3f3]",
   },
+  email: {
+    mark: "E-Mail",
+    title: "E-Mail",
+    header: "bg-[#1d4f73]",
+    page: "bg-[#f4f7fa]",
+  },
 };
 
 type ChatPanelProps = {
@@ -33,9 +39,16 @@ type ChatPanelProps = {
   channel?: SimulatorChannel;
   sending: boolean;
   onSend: (text: string) => Promise<void>;
+  onSendPhoto?: () => Promise<void>;
 };
 
-export function AiChatPanel({ conversation, channel = "whatsapp", sending, onSend }: ChatPanelProps) {
+export function AiChatPanel({
+  conversation,
+  channel = "whatsapp",
+  sending,
+  onSend,
+  onSendPhoto,
+}: ChatPanelProps) {
   const [draft, setDraft] = useState("");
   const bottomRef = useRef<HTMLDivElement | null>(null);
 
@@ -133,6 +146,11 @@ export function AiChatPanel({ conversation, channel = "whatsapp", sending, onSen
                         : "rounded-bl-sm bg-white text-slate-900"
                     }`}
                   >
+                    {message.attachment === "nail_photo" ? (
+                      <span className="mb-1 block rounded-md bg-[#f8e7ea] px-2 py-1 text-[11px] font-semibold text-[#7a3040]">
+                        Nagelbild für ein Angebot
+                      </span>
+                    ) : null}
                     {message.text}
                   </div>
                 </div>
@@ -274,6 +292,22 @@ export function AiChatPanel({ conversation, channel = "whatsapp", sending, onSen
                 {prompt}
               </button>
             ))}
+            <button
+              type="button"
+              disabled={sending || !onSendPhoto}
+              onClick={() => void onSendPhoto?.()}
+              className="rounded-full border border-[#e7b7c2] bg-[#fff5f7] px-2.5 py-1 text-[11px] font-semibold text-[#7a3040] disabled:opacity-50"
+            >
+              Nagelbild senden
+            </button>
+            <button
+              type="button"
+              disabled={sending}
+              onClick={() => void onSend("Ich bin unzufrieden, die Nägel sind nach zwei Tagen abgeplatzt. Das ist eine Beschwerde.")}
+              className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] text-slate-700 disabled:opacity-50"
+            >
+              Beschwerde
+            </button>
           </div>
           <form onSubmit={handleSubmit} className="flex gap-2">
             <input

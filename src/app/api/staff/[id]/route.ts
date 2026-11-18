@@ -13,6 +13,7 @@ const updateStaffSchema = z.object({
   phone: z.string().trim().max(64).optional(),
   gender: z.enum(["female", "male", "unknown"]).optional(),
   bookableOnline: z.boolean().optional(),
+  sortOrder: z.number().int().min(0).max(999).optional(),
   active: z.boolean().optional(),
   serviceIds: z.array(z.string()).optional(),
 });
@@ -53,6 +54,7 @@ export async function PATCH(
           phone = CASE WHEN ${body.phone !== undefined} THEN ${body.phone || null} ELSE phone END,
           gender = COALESCE(${body.gender ?? null}, gender),
           bookable_online = COALESCE(${body.bookableOnline ?? null}, bookable_online),
+          sort_order = COALESCE(${body.sortOrder ?? null}, sort_order),
           active = COALESCE(${body.active ?? null}, active)
         WHERE id = ${id}
       `;

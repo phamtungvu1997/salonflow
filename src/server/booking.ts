@@ -11,6 +11,37 @@ import { recordOutbox } from "./outbox";
 
 type ShiftRow = { start_minute: number; end_minute: number };
 
+async function assertFacilityResource(tx: Db, salonId: string, resourceId: string) {
+  const rows = await tx<{ id: string }[]>`
+    SELECT id FROM resources
+    WHERE id = ${resourceId}
+      AND salon_id = ${salonId}
+      AND active = true
+      AND staff_id IS NULL
+      AND resource_type IN ('room', 'place', 'equipment')
+    FOR UPDATE
+  `;
+  if (!rows[0]) {
+    throw new BookingError(422, "resource", "Die Kabine oder das Gerät ist für diesen Salon nicht buchbar.");
+  }
+  return rows[0].id;
+}
+
+async function insertAllocation(
+  tx: Db,
+  resourceId: string,
+  appointmentId: string,
+  start: Date,
+  end: Date,
+) {
+  await tx`
+    INSERT INTO resource_allocations (id, resource_id, appointment_id, start_at, end_at, active)
+    VALUES (
+      ${`alloc_${crypto.randomUUID()}`}, ${resourceId}, ${appointmentId}, ${start}, ${end}, true
+    )
+  `;
+}
+
 function isExclusion(error: unknown): boolean {
   return (
     typeof error === "object" &&
@@ -121,6 +152,8 @@ export async function createAppointment(
     start: string;
     notes?: string;
     idempotencyKey?: string;
+    resourceId?: string;
+    priceCentsOverride?: number;
   },
 ) {
   try {
@@ -196,6 +229,17 @@ export async function createAppointment(
         throw new BookingError(422, "resource", "Keine buchbare Ressource für den Mitarbeiter.");
       }
 
+      const catalogCents = service[0].price_cents;
+      let chargedCents = catalogCents;
+      if (input.priceCentsOverride !== undefined) {
+        if (
+          input.priceCentsOverride < 0 ||
+          input.priceCentsOverride > catalogCents * 2
+        ) {
+          throw new BookingError(422, "price", "Der Angebotspreis liegt außerhalb des Katalogs.");
+        }
+        chargedCents = input.priceCentsOverride;
+      }
       const appointmentId = `appt_${crypto.randomUUID()}`;
       const notes = input.notes?.trim() || null;
       await tx`
@@ -209,15 +253,14 @@ export async function createAppointment(
           id, appointment_id, sequence, staff_id, title_snapshot, duration_minutes_snapshot, price_cents_snapshot
         ) VALUES (
           ${`item_${crypto.randomUUID()}`}, ${appointmentId}, 1, ${input.staffId},
-          ${service[0].name}, ${service[0].duration_minutes}, ${service[0].price_cents}
+          ${service[0].name}, ${service[0].duration_minutes}, ${chargedCents}
         )
       `;
-      await tx`
-        INSERT INTO resource_allocations (id, resource_id, appointment_id, start_at, end_at, active)
-        VALUES (
-          ${`alloc_${crypto.randomUUID()}`}, ${resources[0].id}, ${appointmentId}, ${start}, ${end}, true
-        )
-      `;
+      await insertAllocation(tx, resources[0].id, appointmentId, start, end);
+      if (input.resourceId) {
+        const facilityId = await assertFacilityResource(tx, input.salonId, input.resourceId);
+        await insertAllocation(tx, facilityId, appointmentId, start, end);
+      }
       await tx`
         INSERT INTO appointment_audit (id, appointment_id, actor_user_id, action)
         VALUES (${`audit_${crypto.randomUUID()}`}, ${appointmentId}, ${actorUserId}, 'create')
@@ -358,16 +401,23 @@ export async function rescheduleAppointment(
       if (!resources[0]) {
         throw new BookingError(422, "resource", "Keine buchbare Ressource für den Mitarbeiter.");
       }
+      const facilityRows = await tx<{ resource_id: string }[]>`
+        SELECT ra.resource_id
+        FROM resource_allocations ra
+        JOIN resources r ON r.id = ra.resource_id
+        WHERE ra.appointment_id = ${input.appointmentId}
+          AND ra.active
+          AND r.resource_type <> 'staff'
+      `;
       await tx`
         UPDATE resource_allocations SET active = false
         WHERE appointment_id = ${input.appointmentId} AND active
       `;
-      await tx`
-        INSERT INTO resource_allocations (id, resource_id, appointment_id, start_at, end_at, active)
-        VALUES (
-          ${`alloc_${crypto.randomUUID()}`}, ${resources[0].id}, ${input.appointmentId}, ${start}, ${end}, true
-        )
-      `;
+      await insertAllocation(tx, resources[0].id, input.appointmentId, start, end);
+      for (const facility of facilityRows) {
+        const facilityId = await assertFacilityResource(tx, current.salon_id, facility.resource_id);
+        await insertAllocation(tx, facilityId, input.appointmentId, start, end);
+      }
       await tx`
         UPDATE appointment_services
         SET staff_id = ${nextStaffId},

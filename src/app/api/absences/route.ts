@@ -2,22 +2,10 @@ import { z } from "zod";
 
 import { assertSalon, canManageSalon, requireUser } from "@/server/auth";
 import { getSql } from "@/server/db";
+import { listSalonHolidays } from "@/server/holidays";
 import { apiError } from "@/server/http";
 import { recordOutbox } from "@/server/outbox";
 import { addDays, BookingError, zonedDateTimeToUtc } from "@/server/time";
-
-const GERMAN_NATIONAL_HOLIDAYS_2026 = [
-  { id: "hol_neujahr", description: "Neujahr", date: "01-01-2026" },
-  { id: "hol_karfreitag", description: "Karfreitag", date: "03-04-2026" },
-  { id: "hol_ostermontag", description: "Ostermontag", date: "06-04-2026" },
-  { id: "hol_tag_der_arbeit", description: "Tag der Arbeit", date: "01-05-2026" },
-  { id: "hol_himmelfahrt", description: "Christi Himmelfahrt", date: "14-05-2026" },
-  { id: "hol_pfingstmontag", description: "Pfingstmontag", date: "25-05-2026" },
-  { id: "hol_einheit", description: "Tag der Deutschen Einheit", date: "03-10-2026" },
-  { id: "hol_reformationstag", description: "Reformationstag (Hamburg)", date: "31-10-2026" },
-  { id: "hol_weihnachten_1", description: "1. Weihnachtstag", date: "25-12-2026" },
-  { id: "hol_weihnachten_2", description: "2. Weihnachtstag", date: "26-12-2026" },
-];
 
 const createAbsenceSchema = z.object({
   salonId: z.string().min(1),
@@ -55,7 +43,12 @@ export async function GET(request: Request) {
     `;
 
     return Response.json({
-      nationalHolidays: GERMAN_NATIONAL_HOLIDAYS_2026,
+      nationalHolidays: (await listSalonHolidays(sql, salonId)).map((holiday) => ({
+        id: holiday.id,
+        description: holiday.name,
+        date: holiday.date,
+        enabled: holiday.enabled,
+      })),
       absences,
     });
   } catch (error) {

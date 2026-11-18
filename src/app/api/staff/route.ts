@@ -127,8 +127,8 @@ export async function POST(request: Request) {
         VALUES (${`asg_${crypto.randomUUID()}`}, ${staffId}, ${parsed.data.salonId})
       `;
       await tx`
-        INSERT INTO resources (id, resource_type, staff_id)
-        VALUES (${`res_${staffId}`}, 'staff', ${staffId})
+        INSERT INTO resources (id, resource_type, staff_id, salon_id)
+        VALUES (${`res_${staffId}`}, 'staff', ${staffId}, ${parsed.data.salonId})
       `;
       if (parsed.data.serviceIds && parsed.data.serviceIds.length > 0) {
         for (const serviceId of parsed.data.serviceIds) {

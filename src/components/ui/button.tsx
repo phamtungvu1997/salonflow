@@ -18,7 +18,7 @@ const buttonVariants = cva(
         sidebar:
           "justify-start bg-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         "sidebar-active":
-          "justify-start bg-sidebar-accent text-sidebar-accent-foreground shadow-sm",
+          "justify-start rounded-full bg-sidebar-primary text-sidebar-primary-foreground shadow-sm",
       },
       size: {
         default: "h-9 px-4 py-2",

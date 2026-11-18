@@ -67,4 +67,28 @@ describe("parseCustomerMessage", () => {
       "price",
     );
   });
+
+  it("reads any catalog service, not only the well-known methods", () => {
+    const catalog = {
+      services: [
+        ...services,
+        {
+          id: "svc_spa",
+          name: "Spa Pediküre",
+          categoryId: "cat_pedi",
+          categoryName: "Pediküre",
+          durationMinutes: 75,
+          priceCents: 5400,
+          eligibleStaffIds: ["staff_anna"],
+        },
+      ],
+      staff,
+    };
+    const parsed = parseCustomerMessage("Was kostet eine Spa Pediküre?", catalog);
+    expect(parsed.serviceId).toBe("svc_spa");
+    expect(parsed.consultIntent).toBe("price");
+    expect(parseCustomerMessage("Welche Leistungen bietet ihr?", catalog).consultIntent).toBe(
+      "catalog",
+    );
+  });
 });

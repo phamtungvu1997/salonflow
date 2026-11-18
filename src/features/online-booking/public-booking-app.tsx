@@ -118,6 +118,8 @@ export function PublicBookingApp({
   const [staff, setStaff] = useState<PublicStaff[]>([]);
 
   const [selectedServiceId, setSelectedServiceId] = useState<string>("");
+  const [extraServiceId, setExtraServiceId] = useState("");
+  const [waitlistIntent, setWaitlistIntent] = useState(false);
   const [selectedStaffId, setSelectedStaffId] = useState<string>("any");
   const [selectedDate, setSelectedDate] = useState<string>(() => berlinToday());
   const [selectedSlot, setSelectedSlot] = useState<string>("");
@@ -133,6 +135,7 @@ export function PublicBookingApp({
   const [city, setCity] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [notes, setNotes] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [privacyAccepted, setPrivacyAccepted] = useState(false);
 
@@ -247,7 +250,7 @@ export function PublicBookingApp({
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
-    if (!selectedServiceId || !selectedDate || !selectedSlot) {
+    if (!selectedServiceId || !selectedDate || (!waitlistIntent && !selectedSlot)) {
       setSubmitError("Bitte wählen Sie Leistung, Datum und eine freie Uhrzeit aus.");
       return;
     }
@@ -261,7 +264,8 @@ export function PublicBookingApp({
           serviceId: selectedServiceId,
           staffId: rules?.allowStaffChoice ? selectedStaffId : "any",
           date: selectedDate,
-          start: selectedSlot,
+          start: waitlistIntent ? undefined : selectedSlot,
+          intent: waitlistIntent ? "waitlist" : "book",
           firstName,
           lastName,
           email,
@@ -271,6 +275,7 @@ export function PublicBookingApp({
           city: rules?.requestAddress ? city : undefined,
           birthDate: rules?.requestBirthDate ? birthDate : undefined,
           notes,
+          discountCode: discountCode.trim() || undefined,
           newsletterOptIn: rules?.allowNewsletter ? newsletterOptIn : false,
           privacyAccepted,
           idempotencyKey: `pub_${token}_${selectedDate}_${selectedSlot}_${email.trim().toLowerCase()}`,
@@ -280,7 +285,27 @@ export function PublicBookingApp({
         error?: string;
         code?: string;
         booking?: ConfirmationResult;
+        waitlist?: { id: string };
       };
+      if (waitlistIntent && res.ok && body.waitlist) {
+        setWaitlistIntent(false);
+        setSubmitError(null);
+        setConfirmation({
+          mode: "request",
+          referenceCode: "WARTELISTE",
+          appointmentId: null,
+          requestId: body.waitlist.id,
+          salonName: rules?.salonName ?? "",
+          serviceName: services.find((service) => service.id === selectedServiceId)?.name ?? "",
+          staffName: "Warteliste",
+          date: selectedDate,
+          start: "",
+          end: "",
+          durationMinutes: 0,
+          priceCents: 0,
+        });
+        return;
+      }
       if (!res.ok || !body.booking) {
         setSubmitError(
           body.error ?? "Die Buchung konnte nicht abgeschlossen werden. Bitte prüfen Sie Ihre Auswahl.",
@@ -289,6 +314,41 @@ export function PublicBookingApp({
           await loadSlots();
         }
         return;
+      }
+      if (rules?.allowMultiService && extraServiceId) {
+        const primary = services.find((service) => service.id === selectedServiceId);
+        const [hour, minute] = selectedSlot.split(":").map(Number);
+        const total = (hour ?? 0) * 60 + (minute ?? 0) + (primary?.durationMinutes ?? 0);
+        const extraStart = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+        const second = await fetch(`/api/public/booking/${encodeURIComponent(token)}`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            serviceId: extraServiceId,
+            staffId: rules.allowStaffChoice ? selectedStaffId : "any",
+            date: selectedDate,
+            start: extraStart,
+            firstName,
+            lastName,
+            email,
+            phone,
+            addressLine: rules.requestAddress ? addressLine : undefined,
+            postalCode: rules.requestAddress ? postalCode : undefined,
+            city: rules.requestAddress ? city : undefined,
+            birthDate: rules.requestBirthDate ? birthDate : undefined,
+            notes,
+          discountCode: discountCode.trim() || undefined,
+            newsletterOptIn: false,
+            privacyAccepted,
+            idempotencyKey: `pub_${token}_${selectedDate}_${extraStart}_${extraServiceId}_${email.trim().toLowerCase()}`,
+          }),
+        });
+        if (!second.ok) {
+          const secondBody = (await second.json().catch(() => ({}))) as { error?: string };
+          setSubmitError(
+            `Die erste Leistung ist gebucht. Die weitere Leistung konnte nicht gespeichert werden: ${secondBody.error ?? "Zeit nicht frei."}`,
+          );
+        }
       }
       setConfirmation(body.booking);
     } catch {
@@ -340,16 +400,22 @@ export function PublicBookingApp({
           </div>
           <div>
             <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">
-              {confirmation.mode === "request" ? "Buchungsanfrage eingegangen" : "Termin bestätigt"}
+              {confirmation.referenceCode === "WARTELISTE"
+                ? "Auf der Warteliste"
+                : confirmation.mode === "request"
+                  ? "Buchungsanfrage eingegangen"
+                  : "Termin bestätigt"}
             </span>
             <h1 className="text-lg font-bold text-slate-900">{confirmation.salonName}</h1>
           </div>
         </div>
 
         <p className="mt-3 text-xs text-slate-600">
-          {confirmation.mode === "request"
-            ? "Ihre Terminanfrage wurde im Salon registriert und wird zeitnah geprüft."
-            : "Ihr Termin wurde verbindlich im Salon-Kalender eingetragen."}
+          {confirmation.referenceCode === "WARTELISTE"
+            ? "Sie stehen auf der Warteliste. Der Salon meldet sich, sobald eine Zeit frei wird. Es ist noch kein Termin im Kalender."
+            : confirmation.mode === "request"
+              ? "Ihre Terminanfrage wurde im Salon registriert und wird zeitnah geprüft."
+              : "Ihr Termin wurde verbindlich im Salon-Kalender eingetragen."}
         </p>
 
         <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 space-y-2 text-xs">
@@ -431,7 +497,7 @@ export function PublicBookingApp({
               </h1>
             </div>
             <span className="rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold">
-              🇩🇪 Deutsch
+              {rules.language === "en" ? "English" : "Deutsch"}
             </span>
           </div>
           <p className="mt-1 flex items-center gap-1.5 text-xs text-white/80">
@@ -459,10 +525,13 @@ export function PublicBookingApp({
           </div>
         ) : null}
 
-        <form onSubmit={(e) => void handleSubmit(e)} className="divide-y divide-slate-100">
-          {/* Employee selection (shown first if staffFirstStep is enabled, matching video 00:27) */}
+        <form onSubmit={(e) => void handleSubmit(e)} className="flex flex-col divide-y divide-slate-100">
           {rules.allowStaffChoice ? (
-            <section className="p-5 sm:p-6 space-y-3" data-testid="public-step-staff">
+            <section
+              className="p-5 sm:p-6 space-y-3"
+              style={{ order: rules.staffFirstStep ? 1 : 2 }}
+              data-testid="public-step-staff"
+            >
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-bold text-slate-900">
                   {rules.staffFirstStep ? "1. Wählen Sie einen Mitarbeiter aus" : "Mitarbeiterin auswählen"}
@@ -526,7 +595,11 @@ export function PublicBookingApp({
           ) : null}
 
           {/* Service selection */}
-          <section className="p-5 sm:p-6 space-y-3" data-testid="public-step-service">
+          <section
+            className="p-5 sm:p-6 space-y-3"
+            style={{ order: rules.staffFirstStep || !rules.allowStaffChoice ? 2 : 1 }}
+            data-testid="public-step-service"
+          >
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-slate-900">
                 {rules.allowStaffChoice && rules.staffFirstStep
@@ -605,10 +678,28 @@ export function PublicBookingApp({
                 );
               })}
             </div>
+            {rules.allowMultiService ? (
+              <label className="block text-xs text-slate-600">
+                Weitere Leistung (optional)
+                <select
+                  value={extraServiceId}
+                  onChange={(event) => setExtraServiceId(event.target.value)}
+                  className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs text-slate-900"
+                >
+                  <option value="">Keine weitere Leistung</option>
+                  {visibleServices
+                    .filter((service) => service.id !== selectedServiceId)
+                    .map((service) => (
+                      <option key={service.id} value={service.id}>
+                        {service.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            ) : null}
           </section>
 
-          {/* Date & available time slots */}
-          <section className="p-5 sm:p-6 space-y-3" data-testid="public-step-datetime">
+          <section className="p-5 sm:p-6 space-y-3" style={{ order: 3 }} data-testid="public-step-datetime">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="text-sm font-bold text-slate-900">Datum & freie Uhrzeit</h2>
               <div className="flex items-center gap-2">
@@ -639,6 +730,16 @@ export function PublicBookingApp({
                 className="rounded-lg border border-amber-200 bg-amber-50/70 px-3.5 py-3 text-xs text-amber-900"
               >
                 An diesem Tag sind keine freien Zeiten verfügbar. Bitte wählen Sie ein anderes Datum.
+                {rules.allowWaitlist ? (
+                  <button
+                    type="submit"
+                    name="waitlist"
+                    onClick={() => setWaitlistIntent(true)}
+                    className="mt-2 block font-bold text-amber-950 underline"
+                  >
+                    Stattdessen auf die Warteliste setzen
+                  </button>
+                ) : null}
               </div>
             ) : (
               <div className="grid grid-cols-3 gap-2 sm:grid-cols-5" data-testid="public-slot-grid">
@@ -666,7 +767,7 @@ export function PublicBookingApp({
           </section>
 
           {/* Customer details + GDPR */}
-          <section className="p-5 sm:p-6 space-y-3" data-testid="public-step-customer">
+          <section className="p-5 sm:p-6 space-y-3" style={{ order: 4 }} data-testid="public-step-customer">
             <h2 className="text-sm font-bold text-slate-900">Ihre Kontaktdaten</h2>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
@@ -775,6 +876,15 @@ export function PublicBookingApp({
                 onChange={(e) => setNotes(e.target.value)}
                 className="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900"
               />
+              <label className="block text-[11px] font-semibold text-slate-600">
+                Rabattcode
+                <input
+                  value={discountCode}
+                  onChange={(event) => setDiscountCode(event.target.value.toUpperCase())}
+                  className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-xs uppercase text-slate-900"
+                  placeholder="Optional"
+                />
+              </label>
             </div>
 
             <div className="space-y-2 pt-1 text-xs">
@@ -787,7 +897,9 @@ export function PublicBookingApp({
                   className="mt-0.5 h-4 w-4 rounded accent-[#f28b82]"
                 />
                 <span>
-                  Ich stimme der Verarbeitung meiner Angaben zur Terminvereinbarung gemäß Datenschutzerklärung zu. *
+                  Ich stimme der Verarbeitung meiner Angaben zur Terminvereinbarung zu. *
+                  {rules.showPrivacyLink ? " Datenschutzerklärung des Salons liegt an der Rezeption aus." : ""}
+                  {rules.showTermsLink ? " Es gelten die AGB des Salons." : ""}
                 </span>
               </label>
 

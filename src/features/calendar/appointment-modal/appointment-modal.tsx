@@ -82,6 +82,10 @@ export function AppointmentModal({
   const [newName, setNewName] = useState("");
   const [walkIn, setWalkIn] = useState(false);
   const [notes, setNotes] = useState("");
+  const [facilityResources, setFacilityResources] = useState<
+    { id: string; name: string; resourceType: string }[]
+  >([]);
+  const [resourceId, setResourceId] = useState("");
   const [openList, setOpenList] = useState<string | null>(null);
   const [availabilityOpen, setAvailabilityOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -91,6 +95,27 @@ export function AppointmentModal({
   useEffect(() => {
     setCatalogServices(initialServices);
   }, [initialServices]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void fetch(`/api/resources?salonId=${encodeURIComponent(salonId)}`)
+      .then(async (response) => {
+        if (!response.ok) return { resources: [] as { id: string; name: string; resourceType: string; active: boolean }[] };
+        return response.json() as Promise<{
+          resources: { id: string; name: string; resourceType: string; active: boolean }[];
+        }>;
+      })
+      .then((data) => {
+        if (cancelled) return;
+        setFacilityResources((data.resources ?? []).filter((resource) => resource.active));
+      })
+      .catch(() => {
+        if (!cancelled) setFacilityResources([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [salonId]);
 
   const service = catalogServices.find((item) => item.id === serviceId) ?? null;
 
@@ -355,6 +380,7 @@ export function AppointmentModal({
             start: slotTarget.start,
             notes: notes.trim() || undefined,
             idempotencyKey: crypto.randomUUID(),
+            resourceId: resourceId || undefined,
           }),
         });
 
@@ -373,6 +399,7 @@ export function AppointmentModal({
               start: minutesLabel(cursorMinutes),
               notes: notes.trim() || undefined,
               idempotencyKey: crypto.randomUUID(),
+              resourceId: resourceId || undefined,
             }),
           });
           cursorMinutes += extraSvc?.durationMinutes ?? extra.durationMinutes ?? 45;
@@ -578,6 +605,25 @@ export function AppointmentModal({
                   repeatWeeks={repeatWeeks}
                   onRepeatWeeks={setRepeatWeeks}
                 />
+                {facilityResources.length > 0 ? (
+                  <label className="block rounded-lg border border-[#e6e8ec] bg-white px-3 py-2 text-xs text-[#3c4450]">
+                    <span className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-[#6d7480]">
+                      Kabine / Platz / Gerät
+                    </span>
+                    <select
+                      value={resourceId}
+                      onChange={(event) => setResourceId(event.target.value)}
+                      className="w-full rounded-md border border-[#d9dde3] bg-white px-2 py-1.5 text-sm text-[#1c1e21]"
+                    >
+                      <option value="">Keine zusätzliche Ressource</option>
+                      {facilityResources.map((resource) => (
+                        <option key={resource.id} value={resource.id}>
+                          {resource.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
                 <AppointmentNotes value={notes} onChange={setNotes} />
               </div>
             </div>

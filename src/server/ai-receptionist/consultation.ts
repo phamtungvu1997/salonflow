@@ -120,17 +120,25 @@ export function compareMethods(services: CatalogService[]): string {
 }
 
 export function buildCatalogOverview(services: CatalogService[]): string {
-  const favorites = services.slice(0, 5);
-  const lines = favorites.map(
-    (s) => `${s.name} (${formatEuro(s.priceCents)}, ${s.durationMinutes} Min.)`,
-  );
+  const groups = new Map<string, CatalogService[]>();
+  for (const service of services) {
+    const key = service.categoryName || "Leistungen";
+    const list = groups.get(key) ?? [];
+    list.push(service);
+    groups.set(key, list);
+  }
+
+  const sections = [...groups.entries()].map(([category, items]) => {
+    const lines = items
+      .map((service) => `${service.name}: ${formatEuro(service.priceCents)}, etwa ${service.durationMinutes} Minuten`)
+      .join("\n");
+    return `${category}\n${lines}`;
+  });
+
   return [
-    pickOne([
-      "Hier ein kleiner Überblick aus unserem Katalog:",
-      "Das buchen Kundinnen bei uns besonders oft:",
-    ]),
-    lines.map((l) => `- ${l}`).join("\n"),
-    "Soll ich etwas genauer erklären oder direkt schauen, wann es passt?",
+    "Das sind die Leistungen, die wir in diesem Salon anbieten. Preise und Dauer kommen aus dem aktuellen Katalog.",
+    sections.join("\n\n"),
+    "Nennen Sie einfach eine Behandlung, dann erkläre ich sie genauer oder suche einen Termin.",
   ].join("\n\n");
 }
 

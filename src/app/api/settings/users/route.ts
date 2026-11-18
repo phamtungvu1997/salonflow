@@ -117,3 +117,64 @@ export async function PATCH(request: Request) {
     return apiError(error);
   }
 }
+
+const deleteUserSchema = z.object({
+  salonId: z.string().min(1),
+  userId: z.string().min(1),
+  role: z.enum(["owner", "manager", "receptionist", "technician"]),
+});
+
+export async function DELETE(request: Request) {
+  try {
+    const user = await requireUser();
+    const url = new URL(request.url);
+    const parsed = deleteUserSchema.safeParse({
+      salonId: url.searchParams.get("salonId"),
+      userId: url.searchParams.get("userId"),
+      role: url.searchParams.get("role"),
+    });
+    if (!parsed.success) {
+      throw new BookingError(422, "invalid", "Salon, Konto und Rolle sind erforderlich.");
+    }
+    const body = parsed.data;
+    assertSalon(user, body.salonId);
+    if (!canManageSalon(user, body.salonId)) {
+      throw new BookingError(403, "forbidden", "Keine Berechtigung zum Löschen von Benutzerkonten.");
+    }
+    if (body.userId === user.id) {
+      throw new BookingError(409, "self_delete", "Das eigene Benutzerkonto kann hier nicht gelöscht werden.");
+    }
+
+    const sql = getSql();
+    await sql.begin(async (tx) => {
+      if (body.role === "owner") {
+        const owners = await tx<{ count: number }[]>`
+          SELECT COUNT(*)::int AS count
+          FROM user_salon_roles
+          WHERE salon_id = ${body.salonId} AND role = 'owner'
+        `;
+        if ((owners[0]?.count ?? 0) <= 1) {
+          throw new BookingError(409, "last_owner", "Der letzte Inhaber dieses Salons kann nicht gelöscht werden.");
+        }
+      }
+
+      await tx`
+        DELETE FROM user_salon_roles
+        WHERE user_id = ${body.userId} AND salon_id = ${body.salonId} AND role = ${body.role}
+      `;
+
+      const remaining = await tx<{ count: number }[]>`
+        SELECT COUNT(*)::int AS count FROM user_salon_roles WHERE user_id = ${body.userId}
+      `;
+      if ((remaining[0]?.count ?? 0) === 0) {
+        await tx`
+          UPDATE users SET status = 'inactive' WHERE id = ${body.userId}
+        `;
+      }
+    });
+
+    return Response.json({ deleted: true });
+  } catch (error) {
+    return apiError(error);
+  }
+}

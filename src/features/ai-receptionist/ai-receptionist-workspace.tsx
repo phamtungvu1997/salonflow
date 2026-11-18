@@ -1,12 +1,14 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import type { SimulatorChannel } from "./types";
 import Link from "next/link";
 import { Bot } from "lucide-react";
 
 import { useSalon } from "@/features/salons/salon-context";
 
 import { AiChatPanel } from "./chat-panel";
+import { OwnerInbox } from "./owner-inbox";
 import { AiProposalPanel } from "./proposal-panel";
 import { SIMULATOR_CHANNELS } from "./types";
 import { useAiChat } from "./use-ai-chat";
@@ -30,11 +32,28 @@ export function AiReceptionistWorkspace() {
     sendMessage,
     approveBooking,
     resetChat,
+    inbox,
+    loadInbox,
+    openConversation,
+    dismissAlert,
   } = useAiChat(salonId);
+  const [channelFilter, setChannelFilter] = useState<SimulatorChannel | "all">("all");
+  const [commentText, setCommentText] = useState("Was kostet Shellac?");
+  const [fromEmail, setFromEmail] = useState("");
+  const [emailSubject, setEmailSubject] = useState("Terminanfrage");
+  const [emailBody, setEmailBody] = useState(
+    "Guten Tag, ich möchte morgen um 10 Uhr einen Termin für Shellac. Geht das?",
+  );
+  const selectedCustomer = customers.find((customer) => customer.id === customerId);
 
   useEffect(() => {
     void loadCustomers();
-  }, [loadCustomers]);
+    void loadInbox();
+  }, [loadCustomers, loadInbox]);
+
+  useEffect(() => {
+    if (selectedCustomer?.email) setFromEmail(selectedCustomer.email);
+  }, [selectedCustomer?.email]);
 
   return (
     <div
@@ -51,7 +70,7 @@ export function AiReceptionistWorkspace() {
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">KI-Rezeption</h1>
                 <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                  Derselbe Chat für WhatsApp, Instagram und TikTok. Beratung und Termine laufen über
+                  Derselbe Chat für WhatsApp, Instagram, TikTok und E-Mail. Beratung und Termine laufen über
                   die Booking Engine, nach Ihrer Freigabe. Live-Versand bleibt gesperrt.
                 </p>
               </div>
@@ -127,6 +146,114 @@ export function AiReceptionistWorkspace() {
               Zum Kalender
             </Link>
           </div>
+          {channel === "email" && !conversation ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-slate-700">Eingehende E-Mail</p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Der Agent liest Absender, Betreff und Text. Die Adresse muss zu einer Kundin dieses Salons gehören. Die Antwort bleibt ein Entwurf und wird nicht gesendet. Ein Termin entsteht erst nach Freigabe.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[
+                  "Guten Tag, ich möchte morgen um 10 Uhr einen Termin für Shellac. Geht das?",
+                  "Was kostet Shellac?",
+                  "Wie kann ich einen Termin machen?",
+                ].map((sample) => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => setEmailBody(sample)}
+                    className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                  >
+                    {sample.length > 42 ? `${sample.slice(0, 42)}…` : sample}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <label className="text-[11px] font-semibold text-slate-600">
+                  Von
+                  <input
+                    value={fromEmail}
+                    onChange={(event) => setFromEmail(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
+                  />
+                </label>
+                <label className="text-[11px] font-semibold text-slate-600">
+                  Betreff
+                  <input
+                    value={emailSubject}
+                    onChange={(event) => setEmailSubject(event.target.value)}
+                    className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-normal text-slate-900"
+                  />
+                </label>
+              </div>
+              <textarea
+                value={emailBody}
+                onChange={(event) => setEmailBody(event.target.value)}
+                rows={3}
+                className="mt-2 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+              />
+              <button
+                type="button"
+                disabled={starting || !salonId || !fromEmail.includes("@") || emailBody.trim().length < 2}
+                onClick={() =>
+                  void startChat({
+                    fromEmail,
+                    subject: emailSubject,
+                    emailBody,
+                  })
+                }
+                className="mt-2 rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              >
+                E-Mail lesen
+              </button>
+            </div>
+          ) : null}
+          {channel !== "whatsapp" && channel !== "email" && !conversation ? (
+            <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-3">
+              <p className="text-xs font-semibold text-slate-700">
+                Kommentar unter einem Beitrag
+              </p>
+              <p className="mt-1 text-[11px] text-slate-500">
+                Der Agent antwortet privat per Direktnachricht, mit Preis aus dem Katalog und dem Online-Buchungslink. Es wird nichts auf Instagram oder TikTok gesendet.
+              </p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {[
+                  "Was kostet Shellac?",
+                  "Wie kann ich einen Termin machen?",
+                  "Ich möchte einen Termin",
+                ].map((sample) => (
+                  <button
+                    key={sample}
+                    type="button"
+                    onClick={() => setCommentText(sample)}
+                    className="rounded-full border border-slate-300 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700"
+                  >
+                    {sample}
+                  </button>
+                ))}
+              </div>
+              <div className="mt-2 flex flex-wrap items-end gap-2">
+                <input
+                  value={commentText}
+                  onChange={(event) => setCommentText(event.target.value)}
+                  className="min-w-[240px] flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"
+                  aria-label="Kommentar"
+                />
+                <button
+                  type="button"
+                  disabled={starting || !salonId || !customerId || commentText.trim().length < 2}
+                  onClick={() => void startChat(commentText)}
+                  className="rounded-md bg-slate-900 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+                >
+                  Privat antworten
+                </button>
+              </div>
+            </div>
+          ) : channel === "whatsapp" && !conversation ? (
+            <p className="mt-3 text-[11px] text-slate-500">
+              WhatsApp hat keine Kommentare unter Beiträgen. Die Kundin schreibt dort selbst in den Chat. Kommentare gelten für Instagram und TikTok.
+            </p>
+          ) : null}
           {error ? (
             <p className="mt-3 text-sm text-rose-700" data-testid="ai-chat-error">
               {error}
@@ -139,12 +266,21 @@ export function AiReceptionistWorkspace() {
           ) : null}
         </section>
 
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1.4fr)_minmax(280px,0.8fr)]">
+        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_minmax(260px,0.7fr)]">
+          <OwnerInbox
+            conversations={inbox}
+            activeId={conversation?.id ?? null}
+            channelFilter={channelFilter}
+            onChannelFilter={setChannelFilter}
+            onOpen={openConversation}
+            onDismiss={(conversationId, alertId) => void dismissAlert(conversationId, alertId)}
+          />
           <AiChatPanel
             conversation={conversation}
             channel={channel}
             sending={sending}
             onSend={sendMessage}
+            onSendPhoto={() => sendMessage("", true)}
           />
           <AiProposalPanel
             conversation={conversation}

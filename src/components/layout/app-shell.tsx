@@ -39,7 +39,7 @@ function AppShellInner({ children }: AppShellProps) {
       className={cn(
         "flex min-h-screen bg-background",
         themeTone === "light" &&
-          "bg-[radial-gradient(circle_at_top_right,_#f0e6e9_0%,_transparent_34%),radial-gradient(circle_at_bottom_left,_#e7eee9_0%,_transparent_42%),var(--background)]",
+          "bg-[radial-gradient(circle_at_top_left,_#f8e3d4_0%,_transparent_28%),radial-gradient(circle_at_bottom_right,_#eadcf0_0%,_transparent_32%),var(--background)]",
       )}
     >
       <div className="sticky top-0 h-screen shrink-0">
@@ -49,7 +49,7 @@ function AppShellInner({ children }: AppShellProps) {
         />
       </div>
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-[52px] flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-card/90 px-4 backdrop-blur md:px-5">
+        <header className="flex h-14 flex-wrap items-center justify-between gap-3 border-b border-border/80 bg-card/80 px-4 shadow-[inset_0_-1px_0_rgba(92,52,95,0.06)] backdrop-blur md:px-5">
           <div className="flex flex-wrap items-center gap-4">
             <SalonSelector />
             <div className="hidden sm:block">
@@ -105,7 +105,7 @@ function AppShellInner({ children }: AppShellProps) {
               Anmelden
             </a>
             <span
-              className="flex h-8 w-8 items-center justify-center rounded-full bg-[#111827] text-xs font-semibold text-white"
+              className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground"
               title="Angemeldet"
             >
               Vu

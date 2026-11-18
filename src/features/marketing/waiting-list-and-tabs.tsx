@@ -276,7 +276,7 @@ export function WaitingListSection({
                       onClick={() => void handleDeleteEntry(entry.id)}
                       className="rounded-md border border-slate-200 px-2.5 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50"
                     >
-                      Entfernen
+                      Löschen
                     </button>
                   </td>
                 </tr>

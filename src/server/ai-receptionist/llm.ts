@@ -45,7 +45,7 @@ export async function interpretWithLlm(
 
   const base = process.env.AI_RECEPTIONIST_BASE_URL ?? "https://api.openai.com/v1";
   const model = process.env.AI_RECEPTIONIST_MODEL ?? "gpt-4o-mini";
-  const serviceNames = catalog.services.map((s) => s.name).slice(0, 20).join(", ");
+  const serviceNames = catalog.services.map((s) => s.name).join(", ");
   const staffNames = catalog.staff.map((s) => s.displayName).slice(0, 16).join(", ");
 
   const response = await fetch(`${base.replace(/\/$/, "")}/chat/completions`, {

@@ -1172,7 +1172,7 @@ export function ServicesSettingsSection({
                     onClick={() => void handleDeactivateService()}
                     className="text-xs font-bold text-rose-600 hover:underline disabled:opacity-50"
                   >
-                    Leistung deaktivieren
+                    Löschen
                   </button>
                 ) : null}
               </div>

@@ -165,25 +165,22 @@ function detectConsultIntent(text: string, hasService: boolean): ConsultIntent {
   if (/\b(wie lange|dauer|dauert|minuten)\b/.test(n)) {
     return hasService ? "duration" : "catalog";
   }
+  if (/\b(leistungen|katalog|angebot|was bietet|welche behandlungen|alle leistungen|service list|menu)\b/.test(n)) {
+    return "catalog";
+  }
   if (
-    /\b(empfehl|empfieh|raten|welche behandlung|was passt|beratung|beraten|unsicher|welche leistung|fur den alltag|für den alltag)\b/.test(
+    /\b(empfehl|empfieh|raten|welche behandlung|was passt|beratung|beraten|unsicher|fur den alltag|für den alltag)\b/.test(
       n,
     ) ||
     /\bwas (soll|kann) ich\b/.test(n)
   ) {
     return "recommend";
   }
-  if (/\b(leistungen|katalog|angebot|was bietet|welche behandlungen)\b/.test(n)) {
-    return "catalog";
-  }
   if (hasService && /\b(was ist|erklar|erkläre|info zu|mehr zu|details)\b/.test(n)) {
     return "service_details";
   }
   if (hasService && !/\b(termin|buchen|morgen|heute|uhr|nachmittag|vormittag)\b/.test(n)) {
-    // Bare service name often means "tell me about it / I want this"
-    if (/^(shellac|gel|biab|acryl|manikure|pedikure|spa)[\w\s/-]*$/i.test(n.trim())) {
-      return "service_details";
-    }
+    return "service_details";
   }
   return null;
 }

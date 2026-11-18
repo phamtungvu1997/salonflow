@@ -1,9 +1,11 @@
 import { randomUUID } from "node:crypto";
 
 import type { Db } from "@/server/db";
+import { ensureDefaultPublicBookingLink } from "@/server/online-booking";
 import { BookingError } from "@/server/time";
 
 import { loadSalonCatalog } from "./availability";
+import { buildCommentPrivateReply } from "./comment-agent";
 import { interpretWithLlm } from "./llm";
 import { loadCustomerPreference, preferenceHint, rememberCustomerPreference } from "./preferences";
 import {
@@ -29,6 +31,31 @@ const PROPOSAL_TTL_MS = 15 * 60_000;
 
 function nowIso(): string {
   return new Date().toISOString();
+}
+
+function isCustomerComplaint(text: string): boolean {
+  return /beschwer|unzufrieden|enttäusch|enttaeusch|reklamation|nie wieder|schlecht beraten|frech|ärger|aerger|complaint|unhappy|furious|angry/i.test(
+    text,
+  );
+}
+
+function raiseOwnerAlert(
+  conversation: AiConversation,
+  kind: AiConversation["alerts"][number]["kind"],
+  text: string,
+) {
+  const alerts = conversation.alerts ?? [];
+  if (alerts.some((alert) => alert.kind === kind && !alert.seenAt)) return;
+  conversation.alerts = [
+    ...alerts,
+    {
+      id: `alert_${randomUUID()}`,
+      kind,
+      text,
+      createdAt: nowIso(),
+      seenAt: null,
+    },
+  ];
 }
 
 function pushMessage(conversation: AiConversation, role: ChatMessage["role"], text: string) {
@@ -186,12 +213,36 @@ export async function startConversation(
     customerId: string;
     actorUserId: string;
     channel?: AiConversation["channel"];
+    commentText?: string;
+    fromEmail?: string;
+    subject?: string;
+    emailBody?: string;
   },
 ): Promise<ConversationPublicView> {
+  let customerId = input.customerId;
+  if (input.fromEmail) {
+    const byEmail = await sql<{ id: string }[]>`
+      SELECT id
+      FROM customers
+      WHERE home_salon_id = ${input.salonId}
+        AND archived_at IS NULL
+        AND lower(email) = lower(${input.fromEmail.trim()})
+      ORDER BY created_at ASC
+      LIMIT 1
+    `;
+    if (!byEmail[0]) {
+      throw new BookingError(
+        404,
+        "email_unknown",
+        "Zu dieser Absenderadresse gibt es keine Kundin in diesem Salon.",
+      );
+    }
+    customerId = byEmail[0].id;
+  }
   const customer = await sql<{ id: string; display_name: string }[]>`
     SELECT id, display_name
     FROM customers
-    WHERE id = ${input.customerId} AND home_salon_id = ${input.salonId}
+    WHERE id = ${customerId} AND home_salon_id = ${input.salonId}
     LIMIT 1
   `;
   if (!customer[0]) {
@@ -203,7 +254,7 @@ export async function startConversation(
     salonId: input.salonId,
     customerId: customer[0].id,
     customerName: customer[0].display_name,
-    channel: input.channel ?? "whatsapp",
+    channel: input.emailBody ? "email" : input.channel ?? "whatsapp",
     actorUserId: input.actorUserId,
     state: "NEW_REQUEST",
     messages: [],
@@ -225,6 +276,7 @@ export async function startConversation(
     preferenceHint: null,
     llmUsed: false,
     lastError: null,
+    alerts: [],
     createdAt: nowIso(),
     updatedAt: nowIso(),
   };
@@ -233,17 +285,54 @@ export async function startConversation(
   conversation.preferenceHint = preferenceHint(pref);
   const name = firstName(customer[0].display_name);
   const memory = conversation.preferenceHint ? `\n${conversation.preferenceHint}` : "";
-  pushMessage(
-    conversation,
-    "assistant",
-    `Hallo ${name}, schön dass Sie schreiben. Ich helfe gern bei der Beratung und bei Terminen.${memory}\n\nMöchten Sie eher eine Empfehlung, oder sollen wir direkt schauen, wann es passt?`,
-  );
+  const emailBody = input.emailBody?.trim();
+  if (emailBody) {
+    const subject = input.subject?.trim();
+    pushMessage(
+      conversation,
+      "system",
+      `E-Mail von ${input.fromEmail?.trim() || "der Kundin"} gelesen. Die Antwort ist ein Entwurf und wurde nicht gesendet.`,
+    );
+    await saveConversation(sql, conversation);
+    return handleCustomerMessage(sql, {
+      conversationId: conversation.id,
+      actorUserId: input.actorUserId,
+      text: subject ? `Betreff: ${subject}\n\n${emailBody}` : emailBody,
+    });
+  }
+  const comment = input.commentText?.trim();
+  if (comment) {
+    if (conversation.channel === "whatsapp") {
+      throw new BookingError(
+        422,
+        "comment_channel",
+        "Kommentare unter Beiträgen gibt es bei Instagram und TikTok. Bei WhatsApp schreibt die Kundin selbst in den Chat.",
+      );
+    }
+    const catalog = await loadSalonCatalog(sql, input.salonId);
+    const link = await ensureDefaultPublicBookingLink(sql, input.salonId);
+    const base = (process.env.PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
+    pushMessage(conversation, "system", "Kommentar unter einem Beitrag. Die private Antwort ist nur ein Entwurf und wurde nicht live gesendet.");
+    pushMessage(conversation, "customer", comment);
+    pushMessage(
+      conversation,
+      "assistant",
+      `Hallo ${name}, ${buildCommentPrivateReply(comment, catalog, `${base}/b/${link.token}`)}${memory}`,
+    );
+    conversation.state = "COLLECTING_DETAILS";
+  } else {
+    pushMessage(
+      conversation,
+      "assistant",
+      `Hallo ${name}, schön dass Sie schreiben. Ich helfe gern bei der Beratung und bei Terminen.${memory}\n\nMöchten Sie eher eine Empfehlung, oder sollen wir direkt schauen, wann es passt?`,
+    );
+  }
   await saveConversation(sql, conversation);
   return toPublicView(conversation);
 }
 
 function setSuggestions(conversation: AiConversation, services: CatalogService[]) {
-  conversation.suggestedServices = services.slice(0, 6).map((service) => ({
+  conversation.suggestedServices = services.map((service) => ({
     id: service.id,
     name: service.name,
     priceCents: service.priceCents,
@@ -296,13 +385,13 @@ function handleConsultation(
   }
 
   if (intent.consultIntent === "catalog") {
-    setSuggestions(conversation, catalog.services.slice(0, 6));
+    setSuggestions(conversation, catalog.services);
     return buildCatalogOverview(catalog.services);
   }
 
   if (intent.consultIntent === "price" || intent.consultIntent === "duration") {
     if (!focused) {
-      setSuggestions(conversation, catalog.services.slice(0, 6));
+      setSuggestions(conversation, catalog.services);
       return intent.consultIntent === "price"
         ? "Klar - wovon soll ich den Preis sagen? Tippen Sie einfach eine Leistung."
         : "Gerne. Welche Behandlung meinen Sie genau? Dann sage ich Ihnen die Dauer.";
@@ -338,6 +427,7 @@ export async function handleCustomerMessage(
     conversationId: string;
     text: string;
     actorUserId: string;
+    nailPhoto?: boolean;
   },
 ): Promise<ConversationPublicView> {
   const conversation = await getConversation(sql, input.conversationId);
@@ -352,11 +442,44 @@ export async function handleCustomerMessage(
   conversation.actorUserId = input.actorUserId;
 
   const text = input.text.trim();
-  if (!text) {
+  if (!text && !input.nailPhoto) {
     throw new BookingError(422, "empty", "Nachricht ist leer.");
   }
 
-  pushMessage(conversation, "customer", text);
+  const customerText = input.nailPhoto
+    ? text || "Hier ist ein Foto meiner Nägel. Was würde das kosten?"
+    : text;
+  pushMessage(conversation, "customer", customerText);
+  if (input.nailPhoto) {
+    const last = conversation.messages[conversation.messages.length - 1];
+    if (last) last.attachment = "nail_photo";
+    raiseOwnerAlert(
+      conversation,
+      "nail_quote",
+      `${conversation.customerName} hat ein Nagelbild für ein Angebot geschickt.`,
+    );
+    pushMessage(
+      conversation,
+      "assistant",
+      "Danke für das Foto. Den Preis lege ich daraus nicht selbst fest. Eine Kollegin schaut sich die Nägel an und nennt Ihnen das Angebot. Wenn Sie schon einen Wunschtag haben, schreiben Sie ihn gern dazu.",
+    );
+    await saveConversation(sql, conversation);
+    return toPublicView(conversation);
+  }
+  if (isCustomerComplaint(customerText)) {
+    raiseOwnerAlert(
+      conversation,
+      "complaint",
+      `${conversation.customerName} hat sich beschwert: „${customerText.slice(0, 140)}“`,
+    );
+    pushMessage(
+      conversation,
+      "assistant",
+      "Das tut mir leid. Ich habe das an die Inhaberin gegeben. Eine Kollegin meldet sich dazu. Wenn Sie parallel einen neuen Termin möchten, sagen Sie mir einfach Tag und Leistung.",
+    );
+    await saveConversation(sql, conversation);
+    return toPublicView(conversation);
+  }
   conversation.lastError = null;
 
   if (conversation.state === "CONFIRMED") {
@@ -475,6 +598,11 @@ export async function handleCustomerMessage(
 
     conversation.state = "AWAITING_STAFF_APPROVAL";
     conversation.calendarHref = null;
+    raiseOwnerAlert(
+      conversation,
+      "approval",
+      `${conversation.customerName} möchte ${proposal.serviceName} am ${proposal.date} um ${proposal.start} buchen.`,
+    );
     pushMessage(
       conversation,
       "assistant",
@@ -552,21 +680,21 @@ export async function handleCustomerMessage(
   // Collect missing pieces with natural acknowledgements
   conversation.state = "COLLECTING_DETAILS";
   if (intent.bookingIntent && !conversation.collected.serviceId && conversation.collected.date) {
-    setSuggestions(conversation, catalog.services.slice(0, 5));
+    setSuggestions(conversation, catalog.services);
     pushMessage(
       conversation,
       "assistant",
       `Alles klar, ${formatGermanDate(conversation.collected.date)} notiere ich. Welche Behandlung soll es denn sein?`,
     );
   } else if (!conversation.collected.serviceId && !conversation.collected.date) {
-    setSuggestions(conversation, catalog.services.slice(0, 5));
+    setSuggestions(conversation, catalog.services);
     pushMessage(
       conversation,
       "assistant",
       "Gerne. Möchten Sie eher Shellac, Gel/BIAB, Maniküre oder Pediküre - und wann passt es ungefähr?",
     );
   } else if (!conversation.collected.serviceId) {
-    setSuggestions(conversation, catalog.services.slice(0, 5));
+    setSuggestions(conversation, catalog.services);
     pushMessage(
       conversation,
       "assistant",

@@ -3,12 +3,13 @@
 **Handoff Date:** 2026-11-17  
 **Governing Spec:** [`docs/MASTER_ARCHITECTURE.md`](MASTER_ARCHITECTURE.md) (V2) & [`AGENTS.md`](../AGENTS.md)
 
-## Current work for the Mac (2026-11-17)
+## Current work for the Mac (2026-11-18)
 
 Branch: `feat/ai-booking-simulator`  
-Remote: `https://github.com/phamtungvu1997/salonflow.git`
+Remote: `https://github.com/phamtungvu1997/salonflow.git`  
+Guide: [`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)
 
-This branch has the calendar, the online-booking work in progress, and the KI-Rezeption simulator. WhatsApp, Instagram, and TikTok share that simulator. Live sending stays off.
+This branch has the calendar, editable Hamburg holidays, salon resources, the full online-booking settings, marketing prices on new online bookings, and the KI-Rezeption simulator with the owner inbox. WhatsApp, Instagram, TikTok, and email share that simulator. Live sending stays off. The shell uses the plum and linen look.
 
 On the Mac, after the steps in section 6:
 

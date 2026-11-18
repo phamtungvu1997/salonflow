@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildRecommendationReply, compareMethods, recommendServices } from "./consultation";
+import { buildCatalogOverview, buildRecommendationReply, compareMethods, recommendServices } from "./consultation";
 import type { CatalogService } from "./types";
 
 const services: CatalogService[] = [
@@ -46,6 +46,15 @@ describe("consultation helpers", () => {
     expect(text).toContain("BIAB");
     expect(text).not.toContain("->");
     expect(text).not.toMatch(/Shellac \(/);
+  });
+
+  it("lists every salon service in the catalog answer", () => {
+    const text = buildCatalogOverview(services);
+    expect(text).toContain("Shellac");
+    expect(text).toContain("BIAB Naturnagelverstärkung");
+    expect(text).toContain("Acryl Neumodellage mit Verlängerung");
+    expect(text).toContain("42,00");
+    expect(text).toContain("68,00");
   });
 
   it("builds a recommendation reply with suggestions", () => {

@@ -7,7 +7,8 @@ import { apiError } from "@/server/http";
 import { BookingError } from "@/server/time";
 
 const messageSchema = z.object({
-  text: z.string().trim().min(1).max(2000),
+  text: z.string().trim().max(2000).optional(),
+  nailPhoto: z.boolean().optional(),
 });
 
 export async function POST(
@@ -23,8 +24,9 @@ export async function POST(
     }
     const conversation = await handleCustomerMessage(getSql(), {
       conversationId: id,
-      text: parsed.data.text,
+      text: parsed.data.text ?? "",
       actorUserId: user.id,
+      nailPhoto: parsed.data.nailPhoto,
     });
     return Response.json({ conversation });
   } catch (error) {

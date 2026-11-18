@@ -1,4 +1,4 @@
-export type SimulatorChannel = "whatsapp" | "instagram" | "tiktok";
+export type SimulatorChannel = "whatsapp" | "instagram" | "tiktok" | "email";
 
 export type ConversationState =
   | "NEW_REQUEST"
@@ -19,6 +19,17 @@ export type ChatMessage = {
   role: ChatRole;
   text: string;
   createdAt: string;
+  attachment?: "nail_photo";
+};
+
+export type OwnerAlertKind = "approval" | "nail_quote" | "complaint";
+
+export type OwnerAlert = {
+  id: string;
+  kind: OwnerAlertKind;
+  text: string;
+  createdAt: string;
+  seenAt: string | null;
 };
 
 export type CatalogService = {
@@ -101,6 +112,7 @@ export type AiConversation = {
   preferenceHint: string | null;
   llmUsed: boolean;
   lastError: string | null;
+  alerts: OwnerAlert[];
   createdAt: string;
   updatedAt: string;
 };
@@ -122,4 +134,5 @@ export type ConversationPublicView = {
   preferenceHint: string | null;
   llmUsed: boolean;
   lastError: string | null;
+  alerts: OwnerAlert[];
 };

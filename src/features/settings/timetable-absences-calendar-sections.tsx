@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   type AbsenceRecord,
@@ -369,6 +369,107 @@ export function TimetableSettingsSection({
   );
 }
 
+function HolidayRow({
+  holiday,
+  salonId,
+  onRefresh,
+}: {
+  holiday: NationalHolidayRow;
+  salonId: string;
+  onRefresh: () => Promise<void>;
+}) {
+  const [name, setName] = useState(holiday.description);
+  const [date, setDate] = useState(holiday.date.slice(0, 10));
+  const [enabled, setEnabled] = useState(holiday.enabled !== false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    setName(holiday.description);
+    setDate(holiday.date.slice(0, 10));
+    setEnabled(holiday.enabled !== false);
+  }, [holiday.description, holiday.date, holiday.enabled]);
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/holidays", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ salonId, id: holiday.id, name, date, enabled }),
+      });
+      if (!response.ok) {
+        const body = (await response.json().catch(() => ({}))) as { error?: string };
+        setError(body.error ?? "Feiertag konnte nicht gespeichert werden.");
+        return;
+      }
+      await onRefresh();
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function remove() {
+    if (!window.confirm(`„${name}“ löschen? Der Tag wird im Kalender wieder freigegeben.`)) return;
+    await fetch(
+      `/api/holidays?salonId=${encodeURIComponent(salonId)}&id=${encodeURIComponent(holiday.id)}`,
+      { method: "DELETE" },
+    );
+    await onRefresh();
+  }
+
+  return (
+    <tr className="hover:bg-slate-50">
+      <td className="px-4 py-2">
+        <input
+          value={name}
+          onChange={(event) => setName(event.target.value)}
+          className="w-full rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900"
+        />
+      </td>
+      <td className="px-4 py-2">
+        <input
+          type="date"
+          value={date}
+          onChange={(event) => setDate(event.target.value)}
+          className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900"
+        />
+      </td>
+      <td className="px-4 py-2">
+        <label className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-700">
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(event) => setEnabled(event.target.checked)}
+          />
+          Sperren
+        </label>
+      </td>
+      <td className="px-4 py-2 text-right">
+        <div className="flex justify-end gap-1.5">
+          <button
+            type="button"
+            disabled={saving || !name.trim() || !date}
+            onClick={() => void save()}
+            className="rounded-md bg-[#18202c] px-2 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+          >
+            Speichern
+          </button>
+          <button
+            type="button"
+            onClick={() => void remove()}
+            className="rounded-md border border-rose-200 px-2 py-1 text-[11px] font-semibold text-rose-700 hover:bg-rose-50"
+          >
+            Löschen
+          </button>
+        </div>
+        {error ? <p className="mt-1 text-[11px] text-rose-700">{error}</p> : null}
+      </td>
+    </tr>
+  );
+}
+
 export function AbsencesSettingsSection({
   salonId,
   staff,
@@ -395,6 +496,9 @@ export function AbsencesSettingsSection({
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
   const [conflictBanner, setConflictBanner] = useState<string | null>(null);
+  const [holidayName, setHolidayName] = useState("");
+  const [holidayDate, setHolidayDate] = useState("");
+  const [holidayError, setHolidayError] = useState<string | null>(null);
 
   const filteredAbsences = useMemo(() => {
     if (staffFilter === "all") return absences;
@@ -493,22 +597,72 @@ export function AbsencesSettingsSection({
         <div className="border-b border-slate-200 px-5 py-4">
           <h3 className="text-sm font-bold text-slate-900">Gesetzliche Feiertage</h3>
           <p className="mt-0.5 text-xs text-slate-500">
-            An gesetzlichen Feiertagen ist der Salon standardmäßig für Online-Buchungen geschlossen.
+            Hamburger Feiertage sind vorausgefüllt. Ein gesperrter Tag blockiert alle Mitarbeiterinnen im Kalender, und die Booking Engine lehnt Termine an dem Tag ab.
           </p>
         </div>
+        <form
+          className="flex flex-wrap items-end gap-2 border-b border-slate-200 px-5 py-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            setHolidayError(null);
+            void fetch("/api/holidays", {
+              method: "POST",
+              headers: { "content-type": "application/json" },
+              body: JSON.stringify({
+                salonId,
+                name: holidayName.trim(),
+                date: holidayDate,
+                enabled: true,
+              }),
+            }).then(async (response) => {
+              if (!response.ok) {
+                const body = (await response.json().catch(() => ({}))) as { error?: string };
+                setHolidayError(body.error ?? "Feiertag konnte nicht angelegt werden.");
+                return;
+              }
+              setHolidayName("");
+              setHolidayDate("");
+              await onRefresh();
+            });
+          }}
+        >
+          <label className="text-[11px] font-semibold text-slate-600">
+            Neuer Feiertag
+            <input
+              value={holidayName}
+              onChange={(event) => setHolidayName(event.target.value)}
+              placeholder="z. B. Heiligabend"
+              className="mt-1 block w-48 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900"
+            />
+          </label>
+          <input
+            type="date"
+            required
+            value={holidayDate}
+            onChange={(event) => setHolidayDate(event.target.value)}
+            className="rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900"
+          />
+          <button
+            type="submit"
+            disabled={!holidayName.trim() || !holidayDate}
+            className="rounded-md bg-[#18202c] px-3 py-1.5 text-[11px] font-semibold text-white disabled:opacity-50"
+          >
+            Hinzufügen
+          </button>
+          {holidayError ? <p className="text-[11px] text-rose-700">{holidayError}</p> : null}
+        </form>
         <table className="w-full text-left text-xs">
           <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase text-slate-500">
             <tr>
-              <th className="px-5 py-2.5">BESCHREIBUNG</th>
-              <th className="px-5 py-2.5">DATUM</th>
+              <th className="px-4 py-2.5">BESCHREIBUNG</th>
+              <th className="px-4 py-2.5">DATUM</th>
+              <th className="px-4 py-2.5">KALENDER</th>
+              <th className="px-4 py-2.5 text-right">AKTION</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
             {nationalHolidays.map((hol) => (
-              <tr key={hol.id} className="hover:bg-slate-50">
-                <td className="px-5 py-2.5 font-medium text-slate-900">{hol.description}</td>
-                <td className="px-5 py-2.5 text-slate-600">{hol.date}</td>
-              </tr>
+              <HolidayRow key={hol.id} holiday={hol} salonId={salonId} onRefresh={onRefresh} />
             ))}
           </tbody>
         </table>

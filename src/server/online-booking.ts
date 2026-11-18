@@ -1,6 +1,7 @@
 import { randomBytes, randomUUID } from "node:crypto";
 
 import { createAppointment, dayBounds } from "./booking";
+import { quoteOnlineServicePrice } from "./marketing-price";
 import type { Db } from "./db";
 import { recordOutbox } from "./outbox";
 import {
@@ -850,6 +851,60 @@ function normalizePhone(phone: string): string {
   return phone.replace(/[^\d+]/g, "").slice(0, 32);
 }
 
+export async function joinPublicWaitlist(
+  sql: Db,
+  input: {
+    token: string;
+    serviceId: string;
+    staffId?: string | null;
+    date: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone: string;
+    notes?: string;
+    privacyAccepted: boolean;
+  },
+): Promise<{ id: string }> {
+  if (!input.privacyAccepted) {
+    throw new BookingError(422, "privacy_required", "Bitte bestätigen Sie die Datenschutzhinweise.");
+  }
+  const { link, rules, services, staff } = await resolvePublicBookingCatalog(sql, input.token);
+  if (!rules.allowWaitlist) {
+    throw new BookingError(403, "waitlist_closed", "Die Warteliste ist für Online-Buchungen geschlossen.");
+  }
+  const service = services.find((item) => item.id === input.serviceId);
+  if (!service) {
+    throw new BookingError(422, "service_not_allowed", "Diese Leistung ist über diesen Link nicht verfügbar.");
+  }
+  const member =
+    input.staffId && input.staffId !== "any"
+      ? staff.find((item) => item.id === input.staffId)
+      : undefined;
+  const id = `wait_${randomUUID()}`;
+  const name = `${input.firstName.trim()} ${input.lastName.trim()}`.trim();
+  await sql`
+    INSERT INTO waiting_list_entries (
+      id, salon_id, customer_name, service_id, service_name,
+      duration_minutes, staff_id, staff_name, date_mode, preferred_date, note, notification_sent
+    ) VALUES (
+      ${id},
+      ${link.salonId},
+      ${name},
+      ${service.id},
+      ${service.name},
+      ${service.durationMinutes},
+      ${member?.id ?? null},
+      ${member?.displayName ?? "Keine Präferenz"},
+      'specific_date',
+      ${input.date},
+      ${input.notes?.trim() || `Online-Warteliste ${input.email.trim()}`},
+      false
+    )
+  `;
+  return { id };
+}
+
 export async function submitPublicBooking(
   sql: Db,
   input: {
@@ -867,6 +922,7 @@ export async function submitPublicBooking(
     city?: string;
     birthDate?: string;
     notes?: string;
+    discountCode?: string;
     newsletterOptIn?: boolean;
     privacyAccepted: boolean;
     idempotencyKey?: string;
@@ -934,10 +990,30 @@ export async function submitPublicBooking(
     );
   }
 
-  const chosenStaffId =
+  let chosenStaffId =
     input.staffId && input.staffId !== "any"
       ? matchingSlot.availableStaffIds.find((id) => id === input.staffId)
-      : matchingSlot.availableStaffIds[0];
+      : undefined;
+  if (!chosenStaffId && (!input.staffId || input.staffId === "any")) {
+    if (rules.assignInOrder) {
+      chosenStaffId = matchingSlot.availableStaffIds[0];
+    } else {
+      const counts = await sql<{ staff_id: string; n: number }[]>`
+        SELECT r.staff_id, count(*)::int AS n
+        FROM resource_allocations ra
+        JOIN resources r ON r.id = ra.resource_id
+        WHERE ra.active = true
+          AND r.staff_id = ANY(${matchingSlot.availableStaffIds})
+          AND ra.start_at >= ${zonedDateTimeToUtc(input.date, "08:00")}
+          AND ra.start_at < ${zonedDateTimeToUtc(input.date, "20:00")}
+        GROUP BY r.staff_id
+      `;
+      const load = new Map(counts.map((row) => [row.staff_id, row.n]));
+      chosenStaffId = [...matchingSlot.availableStaffIds].sort(
+        (a, b) => (load.get(a) ?? 0) - (load.get(b) ?? 0),
+      )[0];
+    }
+  }
 
   if (!chosenStaffId) {
     throw new BookingError(
@@ -972,13 +1048,15 @@ export async function submitPublicBooking(
     );
   }
 
+  const birthDate =
+    input.birthDate && /^\d{4}-\d{2}-\d{2}$/.test(input.birthDate) ? input.birthDate : null;
   let customerId = existingCustomer[0]?.id;
   if (!customerId) {
     customerId = `cust_${randomUUID()}`;
     await sql`
       INSERT INTO customers (
         id, home_salon_id, display_name, first_name, last_name,
-        email, phone_normalized, address_line, postal_code, city, newsletter_opt_in
+        email, phone_normalized, address_line, postal_code, city, birth_date, newsletter_opt_in
       ) VALUES (
         ${customerId},
         ${link.salonId},
@@ -990,13 +1068,15 @@ export async function submitPublicBooking(
         ${input.addressLine?.trim() || null},
         ${input.postalCode?.trim() || null},
         ${input.city?.trim() || null},
+        ${birthDate},
         ${Boolean(input.newsletterOptIn)}
       )
     `;
-  } else if (input.newsletterOptIn) {
+  } else if (input.newsletterOptIn || birthDate) {
     await sql`
       UPDATE customers
-      SET newsletter_opt_in = true
+      SET newsletter_opt_in = newsletter_opt_in OR ${Boolean(input.newsletterOptIn)},
+          birth_date = COALESCE(${birthDate}, birth_date)
       WHERE id = ${customerId} AND home_salon_id = ${link.salonId}
     `;
   }
@@ -1009,6 +1089,15 @@ export async function submitPublicBooking(
     LIMIT 1
   `;
   const actorUserId = actorRows[0]?.user_id ?? "user_owner";
+  const slotStart = zonedDateTimeToUtc(input.date, input.start);
+  const quoted = await quoteOnlineServicePrice(sql, {
+    salonId: link.salonId,
+    catalogCents: service.priceCents,
+    slotStart,
+    slotDate: input.date,
+    discountCode: input.discountCode,
+  });
+  const priceNote = quoted.labels.length ? ` [${quoted.labels.join(", ")}]` : "";
 
   // Booking request mode: store explicit pending request without claiming a confirmed slot.
   if (rules.bookingOption === "requests") {
@@ -1027,7 +1116,7 @@ export async function submitPublicBooking(
           ${chosenStaff.id},
           ${input.date},
           ${input.start},
-          ${input.notes?.trim() || null},
+          ${`${input.notes?.trim() || ""}${priceNote}`.trim() || null},
           'pending'
         )
       `;
@@ -1046,15 +1135,23 @@ export async function submitPublicBooking(
       start: matchingSlot.start,
       end: matchingSlot.end,
       durationMinutes: service.durationMinutes,
-      priceCents: service.priceCents,
+      priceCents: quoted.priceCents,
     };
   }
 
   // Direct booking mode: delegate to the sole authoritative Booking Engine.
-  const notePrefix = `[Online-Buchung]`;
+  const notePrefix = `[Online-Buchung]${priceNote}`;
   const combinedNotes = input.notes?.trim()
     ? `${notePrefix} ${input.notes.trim()}`
     : notePrefix;
+
+  if (quoted.codeId) {
+    await sql`
+      UPDATE discount_codes
+      SET used_count = used_count + 1
+      WHERE id = ${quoted.codeId} AND salon_id = ${link.salonId}
+    `;
+  }
 
   const created = await createAppointment(sql, actorUserId, {
     salonId: link.salonId,
@@ -1065,6 +1162,7 @@ export async function submitPublicBooking(
     start: input.start,
     notes: combinedNotes,
     idempotencyKey: input.idempotencyKey,
+    priceCentsOverride: quoted.priceCents,
   });
 
   const apptId = created.appointmentId ?? "";
@@ -1080,7 +1178,7 @@ export async function submitPublicBooking(
     start: matchingSlot.start,
     end: matchingSlot.end,
     durationMinutes: service.durationMinutes,
-    priceCents: service.priceCents,
+    priceCents: quoted.priceCents,
   };
 }
 
@@ -1213,6 +1311,19 @@ export async function decidePublicBookingRequest(
   }
 
   // Approve: book through the sole Booking Engine so GiST, shifts, absences, snapshots, and outbox apply.
+  const servicePrice = await sql<{ price_cents: number }[]>`
+    SELECT price_cents FROM salon_services
+    WHERE salon_id = ${req.salon_id} AND service_id = ${req.service_id} AND active
+    LIMIT 1
+  `;
+  const approvedQuote = servicePrice[0]
+    ? await quoteOnlineServicePrice(sql, {
+        salonId: req.salon_id,
+        catalogCents: servicePrice[0].price_cents,
+        slotStart: zonedDateTimeToUtc(req.requested_date, req.requested_start),
+        slotDate: req.requested_date,
+      })
+    : null;
   const created = await createAppointment(sql, actorUserId, {
     salonId: req.salon_id,
     staffId: req.staff_id,
@@ -1222,6 +1333,7 @@ export async function decidePublicBookingRequest(
     start: req.requested_start,
     notes: req.notes ? `[Online-Anfrage bestätigt] ${req.notes}` : "[Online-Anfrage bestätigt]",
     idempotencyKey: `approve_${req.id}`,
+    priceCentsOverride: approvedQuote?.priceCents,
   });
 
   await sql`

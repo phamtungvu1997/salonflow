@@ -109,3 +109,28 @@ html.dark input::placeholder,
 html.dark textarea::placeholder {
   color: var(--muted-foreground);
 }
+
+/* Pull the repeated navy and cool-gray surfaces onto the SalonFlow palette. */
+.bg-\[\#18202c\],
+.bg-\[\#111827\],
+.bg-slate-900 {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.hover\:bg-slate-800:hover,
+.hover\:bg-\[\#1f2937\]:hover {
+  background-color: color-mix(in srgb, var(--primary) 82%, white);
+}
+
+.bg-\[\#f4f5f7\],
+.bg-\[\#f3f5f7\],
+.bg-\[\#f7faf9\] {
+  background-color: transparent;
+}
+
+.border-slate-200,
+.border-\[\#e1e4ea\],
+.border-\[\#e6e8ee\] {
+  border-color: var(--border);
+}

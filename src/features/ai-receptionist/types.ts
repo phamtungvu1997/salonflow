@@ -1,4 +1,4 @@
-export type SimulatorChannel = "whatsapp" | "instagram" | "tiktok";
+export type SimulatorChannel = "whatsapp" | "instagram" | "tiktok" | "email";
 
 export type ConversationState =
   | "NEW_REQUEST"
@@ -17,6 +17,17 @@ export type ChatMessage = {
   role: "customer" | "assistant" | "system";
   text: string;
   createdAt: string;
+  attachment?: "nail_photo";
+};
+
+export type OwnerAlertKind = "approval" | "nail_quote" | "complaint";
+
+export type OwnerAlert = {
+  id: string;
+  kind: OwnerAlertKind;
+  text: string;
+  createdAt: string;
+  seenAt: string | null;
 };
 
 export type AvailableSlotOption = {
@@ -84,11 +95,13 @@ export type ConversationPublicView = {
   preferenceHint: string | null;
   llmUsed: boolean;
   lastError: string | null;
+  alerts: OwnerAlert[];
 };
 
 export type CustomerOption = {
   id: string;
   displayName: string;
+  email: string;
 };
 
 export const STATE_LABELS: Record<ConversationState, string> = {
@@ -108,6 +121,7 @@ export const SIMULATOR_CHANNELS: { id: SimulatorChannel; label: string }[] = [
   { id: "whatsapp", label: "WhatsApp" },
   { id: "instagram", label: "Instagram" },
   { id: "tiktok", label: "TikTok" },
+  { id: "email", label: "E-Mail" },
 ];
 
 export const EXAMPLE_PROMPTS = [

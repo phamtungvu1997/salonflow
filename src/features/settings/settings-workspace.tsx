@@ -4,11 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useSalon } from "@/features/salons/salon-context";
 
-import {
-  EmployeesSettingsSection,
-  ResourcesSettingsSection,
-  UserAccountsSection,
-} from "./employees-users-sections";
+import { EmployeesSettingsSection, UserAccountsSection } from "./employees-users-sections";
+import { ResourcesSettingsSection } from "./resources-section";
 import {
   CompanyInfoSection,
   DataExportSection,
@@ -25,7 +22,6 @@ import {
   type AbsenceRecord,
   type ActivityLogRow,
   type NationalHolidayRow,
-  type ResourceRow,
   type SalonSettingsRecord,
   type ServiceCategoryRecord,
   type ServiceRecord,
@@ -102,7 +98,6 @@ export function SettingsWorkspace({
   });
   const [userAccounts, setUserAccounts] = useState<UserAccountRow[]>([]);
   const [activityLogs, setActivityLogs] = useState<ActivityLogRow[]>([]);
-  const [resources, setResources] = useState<ResourceRow[]>([]);
   const [staff, setStaff] = useState<StaffMemberRecord[]>([]);
   const [categories, setCategories] = useState<ServiceCategoryRecord[]>([]);
   const [services, setServices] = useState<ServiceRecord[]>([]);
@@ -125,13 +120,11 @@ export function SettingsWorkspace({
         stats?: SettingsStats;
         userAccounts?: UserAccountRow[];
         activityLogs?: ActivityLogRow[];
-        resources?: ResourceRow[];
       };
       if (data.settings) setSettings(data.settings);
       if (data.stats) setStats(data.stats);
       if (data.userAccounts) setUserAccounts(data.userAccounts);
       if (data.activityLogs) setActivityLogs(data.activityLogs);
-      if (data.resources) setResources(data.resources);
     }
 
     if (staffRes.ok) {
@@ -315,7 +308,7 @@ export function SettingsWorkspace({
         ) : null}
 
         {!loading && activeSection === "resources" ? (
-          <ResourcesSettingsSection resources={resources} />
+          <ResourcesSettingsSection salonId={salonId} />
         ) : null}
 
         {!loading && activeSection === "timetable" ? (
@@ -348,7 +341,12 @@ export function SettingsWorkspace({
         {!loading && activeSection === "online-bookings" ? (
           <OnlineBookingsSection
             key={`online_${salonId}_${settings.onlineIntervalMinutes}`}
+            salonId={salonId}
+            salonName={activeSalonName}
             settings={settings}
+            services={services}
+            categories={categories}
+            staff={staff}
             onSave={saveSalonSettingsPatch}
           />
         ) : null}

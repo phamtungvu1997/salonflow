@@ -4,6 +4,7 @@ import { getSql } from "@/server/db";
 import { apiError } from "@/server/http";
 import {
   computePublicAvailableSlots,
+  joinPublicWaitlist,
   resolvePublicBookingCatalog,
   submitPublicBooking,
 } from "@/server/online-booking";
@@ -42,7 +43,6 @@ const submitSchema = z.object({
   serviceId: z.string().min(1),
   staffId: z.string().optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  start: z.string().regex(/^\d{2}:\d{2}$/),
   firstName: z.string().trim().min(1, "Vorname erforderlich.").max(80),
   lastName: z.string().trim().min(1, "Nachname erforderlich.").max(80),
   email: z.string().trim().email("Gültige E-Mail-Adresse erforderlich.").max(160),
@@ -52,9 +52,16 @@ const submitSchema = z.object({
   city: z.string().trim().max(80).optional(),
   birthDate: z.string().trim().max(20).optional(),
   notes: z.string().trim().max(500).optional(),
+  discountCode: z.string().trim().max(40).optional(),
   newsletterOptIn: z.boolean().optional(),
   privacyAccepted: z.boolean(),
   idempotencyKey: z.string().max(120).optional(),
+  intent: z.enum(["book", "waitlist"]).optional(),
+  start: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+}).superRefine((value, ctx) => {
+  if (value.intent !== "waitlist" && !value.start) {
+    ctx.addIssue({ code: "custom", message: "Uhrzeit erforderlich.", path: ["start"] });
+  }
 });
 
 export async function GET(
@@ -115,9 +122,14 @@ export async function POST(
       );
     }
 
+    if (parsed.data.intent === "waitlist") {
+      const joined = await joinPublicWaitlist(getSql(), { token, ...parsed.data });
+      return Response.json({ waitlist: joined }, { status: 201 });
+    }
     const booking = await submitPublicBooking(getSql(), {
       token,
       ...parsed.data,
+      start: parsed.data.start!,
     });
 
     return Response.json({ booking }, { status: 201 });

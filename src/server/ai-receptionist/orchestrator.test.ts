@@ -46,6 +46,7 @@ function baseConversation(overrides: Partial<AiConversation> = {}): AiConversati
     preferenceHint: null,
     llmUsed: false,
     lastError: null,
+    alerts: [],
     createdAt: now,
     updatedAt: now,
     ...overrides,

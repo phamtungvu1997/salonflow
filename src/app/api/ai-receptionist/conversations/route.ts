@@ -9,7 +9,11 @@ import { BookingError } from "@/server/time";
 const createSchema = z.object({
   salonId: z.string().min(1),
   customerId: z.string().min(1),
-  channel: z.enum(["whatsapp", "instagram", "tiktok"]).default("whatsapp"),
+  channel: z.enum(["whatsapp", "instagram", "tiktok", "email"]).default("whatsapp"),
+  commentText: z.string().trim().min(2).max(500).optional(),
+  fromEmail: z.string().trim().email().optional(),
+  subject: z.string().trim().max(160).optional(),
+  emailBody: z.string().trim().min(2).max(4000).optional(),
 });
 
 export async function POST(request: Request) {
@@ -25,6 +29,10 @@ export async function POST(request: Request) {
       customerId: parsed.data.customerId,
       actorUserId: user.id,
       channel: parsed.data.channel,
+      commentText: parsed.data.commentText,
+      fromEmail: parsed.data.fromEmail,
+      subject: parsed.data.subject,
+      emailBody: parsed.data.emailBody,
     });
     return Response.json({ conversation }, { status: 201 });
   } catch (error) {
