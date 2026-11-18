@@ -36,8 +36,9 @@ A saved appointment keeps the service name, duration, and price from that moment
 |---|---|---|
 | Calendar | `/kalender` | Day and week grid, create and cancel appointments, absences in the staff column |
 | Customers | `/kunden` | Directory and profile. Removing a customer archives them |
-| Settings | `/einstellungen` | Services, staff, hours, holidays, rooms, online booking, accounts, software billing |
+| Settings | `/einstellungen` | Services, staff, hours, holidays, rooms, online booking, accounts, software billing, reports |
 | Marketing | `/marketing` | Last-minute discount, dynamic price windows, discount codes, waiting list |
+| Online | `/online` | Own booking link and QR, microsite, profile, and widget reviews. Treatwell and Google stay disconnected |
 | Kundendialog | `/ki-rezeption` | Owner dashboard for chats, approvals, nail photos, and complaints |
 | Support | `/support` | Searchable German guides, salon feature wishes, and internal messages |
 | Public booking | `/b/{token}` | Customer link. Embed form is `/embed/{token}` |

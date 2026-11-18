@@ -1,6 +1,7 @@
 import {
   Bot,
   CalendarDays,
+  Globe,
   LifeBuoy,
   Megaphone,
   Plug,
@@ -34,6 +35,12 @@ export const primaryNav: NavItem[] = [
     label: "Marketing",
     icon: Megaphone,
     description: "Einblicke, Warteliste und Rabatte",
+  },
+  {
+    href: "/online",
+    label: "Online",
+    icon: Globe,
+    description: "Buchungslink, Webseite und Profil",
   },
   {
     href: "/einstellungen",

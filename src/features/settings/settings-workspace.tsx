@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useSalon } from "@/features/salons/salon-context";
 
 import { BillingSection } from "./billing-section";
+import { ReportsSection } from "./reports-section";
 import { WidgetsSection } from "./widgets-section";
 import { EmployeesSettingsSection, UserAccountsSection } from "./employees-users-sections";
 import { ResourcesSettingsSection } from "./resources-section";
@@ -91,6 +92,10 @@ export function SettingsWorkspace({
   const activeSalonName = activeSalon?.name ?? "Jeannie Nagelstudio";
 
   const [activeSection, setActiveSection] = useState<SettingsSectionId>(initialSection);
+
+  useEffect(() => {
+    setActiveSection(initialSection);
+  }, [initialSection]);
   const [settings, setSettings] = useState<SalonSettingsRecord>(DEFAULT_SETTINGS);
   const [stats, setStats] = useState<SettingsStats>({
     totalCustomers: 0,
@@ -179,13 +184,13 @@ export function SettingsWorkspace({
   return (
     <div
       data-testid="page-einstellungen"
-      className="flex min-h-[calc(100vh-52px)] bg-[#f4f5f7]"
+      className="flex min-h-0 min-w-0 flex-col md:min-h-[calc(100vh-52px)] md:flex-row"
     >
       {/* Secondary Settings Sidebar matching Salonized video 00:05 – 05:26 */}
       <aside
         data-testid="settings-secondary-sidebar"
         aria-label="Einstellungen-Navigation"
-        className="w-56 shrink-0 border-r border-slate-200 bg-white px-3 py-4 select-none"
+        className="max-h-52 w-full shrink-0 overflow-y-auto border-b border-border bg-card px-3 py-3 select-none md:max-h-none md:w-56 md:border-b-0 md:border-r md:py-4"
       >
         <button
           type="button"
@@ -239,7 +244,7 @@ export function SettingsWorkspace({
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex-1 overflow-y-auto p-6 lg:p-8">
+      <div className="min-w-0 flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
         {/* Keep placeholder-notice testid accessible across all tabs for navigation.spec.ts */}
         {activeSection !== "hub" ? (
           <div data-testid="placeholder-notice" className="sr-only">
@@ -364,6 +369,8 @@ export function SettingsWorkspace({
             onSave={saveSalonSettingsPatch}
           />
         ) : null}
+
+        {!loading && activeSection === "reports" ? <ReportsSection salonId={salonId} /> : null}
 
         {!loading &&
         (activeSection === "invoices" ||

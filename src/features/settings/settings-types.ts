@@ -21,7 +21,8 @@ export type SettingsSectionId =
   | "microsite"
   | "feedback-widget"
   | "pricing-widget"
-  | "giftcard";
+  | "giftcard"
+  | "reports";
 
 export interface SalonSettingsRecord {
   salonId: string;
@@ -242,6 +243,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
   {
     groupLabel: "VERKÄUFE",
     items: [
+      { id: "reports", label: "Berichte" },
       { id: "invoices", label: "Rechnungen & Belege" },
       { id: "vat", label: "MwSt.-Sätze" },
       { id: "loyalty", label: "Treuepunkte" },

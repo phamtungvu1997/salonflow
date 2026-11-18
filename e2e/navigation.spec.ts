@@ -4,6 +4,7 @@ const routes = [
   { path: "/kalender", testId: "page-kalender", label: "Kalender" },
   { path: "/kunden", testId: "page-kunden", label: "Kunden" },
   { path: "/marketing", testId: "page-marketing", label: "Marketing" },
+  { path: "/online", testId: "page-online", label: "Online" },
   { path: "/einstellungen", testId: "page-einstellungen", label: "Einstellungen" },
   { path: "/integrationen", testId: "page-integrationen", label: "Integrationen" },
   { path: "/ki-rezeption", testId: "page-ki-rezeption", label: "Kundendialog" },

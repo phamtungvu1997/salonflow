@@ -77,16 +77,16 @@ export default {
         sm: "calc(var(--radius) - 4px)",
       },
       fontFamily: {
-        sans: ["var(--font-source-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-fraunces)", "Georgia", "serif"],
+        sans: ["var(--font-instrument)", "system-ui", "sans-serif"],
+        display: ["var(--font-instrument)", "system-ui", "sans-serif"],
       },
       boxShadow: {
-        panel: "0 1px 0 rgba(255,255,255,0.04), 0 18px 40px rgba(15, 23, 42, 0.08)",
+        panel: "0 1px 2px rgba(28, 25, 23, 0.04), 0 8px 24px rgba(28, 25, 23, 0.04)",
       },
       keyframes: {
         "fade-up": {
-          from: { opacity: "0", transform: "translateY(8px)" },
-          to: { opacity: "1", transform: "translateY(0)" },
+          from: { opacity: "0.72" },
+          to: { opacity: "1" },
         },
         "sidebar-slide": {
           from: { opacity: "0", transform: "translateX(-8px)" },
@@ -94,7 +94,7 @@ export default {
         },
       },
       animation: {
-        "fade-up": "fade-up 320ms ease-out both",
+        "fade-up": "fade-up 120ms cubic-bezier(0.2, 0, 0, 1) both",
         "sidebar-slide": "sidebar-slide 280ms ease-out both",
       },
     },

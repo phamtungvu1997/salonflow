@@ -9,14 +9,12 @@ import {
   Globe,
   Lock,
   Search,
-  Settings,
-  SlidersHorizontal,
   User,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { CalendarTitleTools } from "./calendar-title-tools";
 
 import {
   AppointmentDetailPopover,
@@ -119,6 +117,10 @@ function formatDayHeaderShort(dateStr: string): { dow: string; dayMonth: string 
 export function CalendarBoard({ initialDate }: { initialDate: string }) {
   const { activeSalon } = useSalon();
   const [date, setDate] = useState(initialDate);
+
+  useEffect(() => {
+    setDate(initialDate);
+  }, [initialDate]);
   const [staff, setStaff] = useState<StaffColumn[]>([]);
   const [appointments, setAppointments] = useState<CalendarAppointmentDetail[]>([]);
   const [absences, setAbsences] = useState<CalendarAbsenceItem[]>([]);
@@ -678,25 +680,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
       <div className="mb-2 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <h1 className="text-lg font-bold tracking-tight text-[#1c1e21]">Kalender</h1>
-          <Link
-            href="/einstellungen"
-            aria-label="Kalender-Einstellungen"
-            title="Kalender-Einstellungen"
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[#6d7480] hover:bg-[#eef0f3] hover:text-[#1c1e21]"
-          >
-            <Settings className="h-4 w-4" />
-          </Link>
-          <button
-            type="button"
-            aria-label="Ansicht filtern"
-            title="Ansicht filtern"
-            onClick={() =>
-              setOpenDropdown((prev) => (prev === "employees" ? null : "employees"))
-            }
-            className="flex h-7 w-7 items-center justify-center rounded-md text-[#6d7480] hover:bg-[#eef0f3] hover:text-[#1c1e21]"
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-          </button>
+          <CalendarTitleTools salonId={activeSalon?.id ?? null} />
         </div>
         <span
           className="hidden text-xs text-muted-foreground sm:inline"
@@ -1272,7 +1256,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                               startAppointmentPointerDrag(event, covering, member.color)
                             }
                             className={cn(
-                              "absolute inset-0.5 flex cursor-grab flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/25 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-all select-none hover:z-10 hover:shadow-md active:cursor-grabbing",
+                              "absolute inset-0.5 flex cursor-grab flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/25 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-shadow duration-150 select-none hover:z-10 hover:shadow-md active:cursor-grabbing",
                               isBeingDragged &&
                                 "z-10 opacity-45 ring-1 ring-dashed ring-[#111827]/50",
                             )}
@@ -1351,7 +1335,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                               backgroundImage:
                                 "repeating-linear-gradient(-45deg, #f9d8d6, #f9d8d6 6px, #fce8e6 6px, #fce8e6 12px)",
                             }}
-                            className="absolute inset-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-[#d97775] px-1.5 py-1 text-left text-[10.5px] leading-[1.22] text-[#5c2b29] shadow-2xs transition-all hover:z-10 hover:shadow-md"
+                            className="absolute inset-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-[#d97775] px-1.5 py-1 text-left text-[10.5px] leading-[1.22] text-[#5c2b29] shadow-2xs transition-shadow duration-150 hover:z-10 hover:shadow-md"
                           >
                             <span className="block truncate text-[10px] font-medium">
                               {timeRangeLabel}
@@ -1526,7 +1510,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
                               setSelected(primaryAppt);
                             }}
                             style={{ backgroundColor: apptStaff?.color ?? "#f4b6c2" }}
-                            className="absolute inset-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/30 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-all hover:z-20 hover:shadow-md"
+                            className="absolute inset-0.5 flex flex-col justify-start overflow-hidden rounded-[4px] border-l-[3px] border-black/30 px-1.5 py-1 text-left text-[11px] leading-[1.22] text-[#1c1e21] shadow-2xs transition-shadow duration-150 hover:z-20 hover:shadow-md"
                           >
                             <span className="block truncate text-[10px] font-medium">
                               {timeRangeLabel}

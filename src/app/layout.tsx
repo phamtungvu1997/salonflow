@@ -1,18 +1,12 @@
 import type { Metadata } from "next";
-import { Fraunces, Source_Sans_3 } from "next/font/google";
+import { Instrument_Sans } from "next/font/google";
 
 import { AppShell } from "@/components/layout/app-shell";
 
 import "./globals.css";
 
-const sourceSans = Source_Sans_3({
-  variable: "--font-source-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const instrument = Instrument_Sans({
+  variable: "--font-instrument",
   subsets: ["latin"],
   display: "swap",
 });
@@ -47,7 +41,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${sourceSans.variable} ${fraunces.variable}`}>
+      <body className={instrument.variable}>
         <AppShell>{children}</AppShell>
       </body>
     </html>

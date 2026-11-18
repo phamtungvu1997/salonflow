@@ -26,7 +26,7 @@ import {
 import { useCustomersDirectory } from "@/features/customers/use-customers-directory";
 import { useSalon } from "@/features/salons/salon-context";
 
-export function CustomerAdmin() {
+export function CustomerAdmin({ initialProfileId = null }: { initialProfileId?: string | null }) {
   const { activeSalon } = useSalon();
   const salonId = activeSalon?.id ?? "salon_jeannie";
 
@@ -58,7 +58,11 @@ export function CustomerAdmin() {
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<CustomerRecord | null>(null);
-  const [activeProfileId, setActiveProfileId] = useState<string | null>(null);
+  const [activeProfileId, setActiveProfileId] = useState<string | null>(initialProfileId);
+
+  useEffect(() => {
+    if (initialProfileId) setActiveProfileId(initialProfileId);
+  }, [initialProfileId]);
   const [profileRefreshKey, setProfileRefreshKey] = useState(0);
 
   // Booking modal state when "Termin erstellen" is clicked inside Customer Profile

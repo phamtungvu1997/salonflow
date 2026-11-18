@@ -278,7 +278,7 @@ export function SupportCenter() {
 
       {messageOpen ? (
         <form
-          className="fixed bottom-20 right-6 z-20 w-80 rounded-2xl border border-border bg-card p-4 shadow-xl"
+          className="fixed bottom-20 right-3 z-20 w-[min(20rem,calc(100vw-1.5rem))] rounded-2xl border border-border bg-card p-4 shadow-xl sm:right-6"
           onSubmit={(event) => {
             event.preventDefault();
             void save("message", messageTitle, messageBody).then((saved) => {
