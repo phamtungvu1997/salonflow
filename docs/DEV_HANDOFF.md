@@ -9,7 +9,7 @@ Branch: `feat/ai-booking-simulator`
 Remote: `https://github.com/phamtungvu1997/salonflow.git`  
 Guide: [`PROJECT_GUIDE.md`](PROJECT_GUIDE.md)
 
-This branch has the calendar, editable Hamburg holidays, salon resources, the full online-booking settings, marketing prices on new online bookings, and the KI-Rezeption simulator with the owner inbox. WhatsApp, Instagram, TikTok, and email share that simulator. Live sending stays off. The shell uses the plum and linen look.
+This branch has the calendar, editable Hamburg holidays, salon resources, the full online-booking settings, marketing prices on new online bookings, and the Kundendialog dashboard (route `/ki-rezeption`) with the owner inbox. WhatsApp, Instagram, TikTok, and email share that simulator. Live sending stays off. The shell uses the plum and linen look.
 
 On the Mac, after the steps in section 6:
 

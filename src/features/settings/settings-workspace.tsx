@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 
 import { useSalon } from "@/features/salons/salon-context";
 
+import { BillingSection } from "./billing-section";
+import { WidgetsSection } from "./widgets-section";
 import { EmployeesSettingsSection, UserAccountsSection } from "./employees-users-sections";
 import { ResourcesSettingsSection } from "./resources-section";
 import {
@@ -269,6 +271,10 @@ export function SettingsWorkspace({
 
         {!loading && activeSection === "export" ? <DataExportSection /> : null}
 
+        {!loading && activeSection === "billing" ? (
+          <BillingSection salonId={salonId} salonName={activeSalonName} />
+        ) : null}
+
         {!loading && activeSection === "users" ? (
           <UserAccountsSection
             salonId={salonId}
@@ -360,13 +366,18 @@ export function SettingsWorkspace({
         ) : null}
 
         {!loading &&
-        (activeSection === "integrations" ||
-          activeSection === "forms" ||
-          activeSection === "invoices" ||
+        (activeSection === "invoices" ||
           activeSection === "vat" ||
           activeSection === "loyalty" ||
+          activeSection === "microsite" ||
           activeSection === "feedback-widget" ||
-          activeSection === "pricing-widget") ? (
+          activeSection === "pricing-widget" ||
+          activeSection === "giftcard") ? (
+          <WidgetsSection salonId={salonId} section={activeSection} />
+        ) : null}
+
+        {!loading &&
+        (activeSection === "integrations" || activeSection === "forms") ? (
           <DeferredV1Section
             title={
               SETTINGS_NAV_GROUPS.flatMap((g) => g.items).find(

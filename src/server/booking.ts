@@ -8,6 +8,7 @@ import {
 } from "./time";
 import type { Db } from "./db";
 import { recordOutbox } from "./outbox";
+import { awardLoyaltyForCompletion } from "./widgets";
 
 type ShiftRow = { start_minute: number; end_minute: number };
 
@@ -309,13 +310,14 @@ export async function rescheduleAppointment(
       const rows = await tx<{
         version: number;
         salon_id: string;
+        customer_id: string;
         status: string;
         staff_id: string;
         title_snapshot: string;
         duration_minutes_snapshot: number;
         price_cents_snapshot: number;
       }[]>`
-        SELECT a.version, a.salon_id, a.status, i.staff_id,
+        SELECT a.version, a.salon_id, a.customer_id, a.status, i.staff_id,
                i.title_snapshot, i.duration_minutes_snapshot, i.price_cents_snapshot
         FROM appointments a
         JOIN appointment_services i ON i.appointment_id = a.id AND i.sequence = 1
@@ -427,6 +429,14 @@ export async function rescheduleAppointment(
         WHERE appointment_id = ${input.appointmentId} AND sequence = 1
       `;
       const nextStatus = input.status ?? current.status;
+      if (nextStatus === "completed" && current.status !== "completed") {
+        await awardLoyaltyForCompletion(tx, {
+          salonId: current.salon_id,
+          customerId: current.customer_id,
+          appointmentId: input.appointmentId,
+          priceCents: nextPriceCents,
+        });
+      }
       await tx`
         UPDATE appointments
         SET start_at = ${start},

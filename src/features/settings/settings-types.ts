@@ -3,6 +3,7 @@ export type SettingsSectionId =
   | "general"
   | "export"
   | "users"
+  | "billing"
   | "integrations"
   | "company"
   | "absences"
@@ -17,8 +18,10 @@ export type SettingsSectionId =
   | "invoices"
   | "vat"
   | "loyalty"
+  | "microsite"
   | "feedback-widget"
-  | "pricing-widget";
+  | "pricing-widget"
+  | "giftcard";
 
 export interface SalonSettingsRecord {
   salonId: string;
@@ -207,6 +210,7 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
       { id: "general", label: "Allgemeine Einstellungen" },
       { id: "export", label: "Datenexport" },
       { id: "users", label: "Benutzerkonten" },
+      { id: "billing", label: "Abrechnung" },
       { id: "integrations", label: "Integrationen", deferredV1: true },
     ],
   },
@@ -238,16 +242,18 @@ export const SETTINGS_NAV_GROUPS: SettingsNavGroup[] = [
   {
     groupLabel: "VERKÄUFE",
     items: [
-      { id: "invoices", label: "Rechnungen & Belege", deferredV1: true },
-      { id: "vat", label: "MwSt.-Sätze", deferredV1: true },
-      { id: "loyalty", label: "Treuepunkte", deferredV1: true },
+      { id: "invoices", label: "Rechnungen & Belege" },
+      { id: "vat", label: "MwSt.-Sätze" },
+      { id: "loyalty", label: "Treuepunkte" },
     ],
   },
   {
     groupLabel: "PROMOTION",
     items: [
-      { id: "feedback-widget", label: "Bewertungs-Widget", deferredV1: true },
-      { id: "pricing-widget", label: "Preislisten-Widget", deferredV1: true },
+      { id: "microsite", label: "Mikroseite" },
+      { id: "feedback-widget", label: "Bewertungs-Widget" },
+      { id: "pricing-widget", label: "Preislisten-Widget" },
+      { id: "giftcard", label: "Gutschein-Widget" },
     ],
   },
 ];

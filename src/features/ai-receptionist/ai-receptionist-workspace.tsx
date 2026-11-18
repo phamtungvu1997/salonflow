@@ -3,11 +3,11 @@
 import { useEffect, useState } from "react";
 import type { SimulatorChannel } from "./types";
 import Link from "next/link";
-import { Bot } from "lucide-react";
 
 import { useSalon } from "@/features/salons/salon-context";
 
 import { AiChatPanel } from "./chat-panel";
+import { DialogBoard } from "./dialog-board";
 import { OwnerInbox } from "./owner-inbox";
 import { AiProposalPanel } from "./proposal-panel";
 import { SIMULATOR_CHANNELS } from "./types";
@@ -36,8 +36,10 @@ export function AiReceptionistWorkspace() {
     loadInbox,
     openConversation,
     dismissAlert,
+    sendOwnerReply,
   } = useAiChat(salonId);
   const [channelFilter, setChannelFilter] = useState<SimulatorChannel | "all">("all");
+  const [desk, setDesk] = useState<"overview" | "thread">("overview");
   const [commentText, setCommentText] = useState("Was kostet Shellac?");
   const [fromEmail, setFromEmail] = useState("");
   const [emailSubject, setEmailSubject] = useState("Terminanfrage");
@@ -58,30 +60,49 @@ export function AiReceptionistWorkspace() {
   return (
     <div
       data-testid="page-ki-rezeption"
-      className="min-h-[calc(100vh-52px)] bg-[#f4f5f7] p-6 lg:p-8"
+      className="min-h-[calc(100vh-52px)] p-4 md:p-6"
     >
-      <div className="mx-auto max-w-6xl space-y-6">
-        <header className="rounded-xl border border-slate-200 bg-white px-6 py-5 shadow-xs">
-          <div className="flex flex-wrap items-start justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <div className="mt-0.5 flex size-10 items-center justify-center rounded-lg bg-slate-100 text-slate-700">
-                <Bot className="size-5" aria-hidden />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold text-slate-900">KI-Rezeption</h1>
-                <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                  Derselbe Chat für WhatsApp, Instagram, TikTok und E-Mail. Beratung und Termine laufen über
-                  die Booking Engine, nach Ihrer Freigabe. Live-Versand bleibt gesperrt.
-                </p>
-              </div>
-            </div>
-            <span className="rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[11px] font-semibold text-amber-800">
-              Simulator · Bestätigte Neuanlage
-            </span>
-          </div>
-        </header>
+      <div className="mx-auto max-w-6xl space-y-4">
+        {desk === "overview" ? (
+          <DialogBoard
+            salonName={activeSalon?.name ?? "den Salon"}
+            conversations={inbox}
+            onOpen={(item) => {
+              openConversation(item);
+              setDesk("thread");
+            }}
+            onNew={() => {
+              resetChat();
+              setDesk("thread");
+            }}
+            onCalendar={() => {
+              window.location.href = "/kalender";
+            }}
+            onSendQuote={(conversationId, euros, note) =>
+              sendOwnerReply({ conversationId, kind: "nail_quote", quoteEuros: euros, note })
+            }
+            onSendComplaint={(conversationId, choice, note) =>
+              sendOwnerReply({ conversationId, kind: "complaint", complaintChoice: choice, note })
+            }
+          />
+        ) : null}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-xs">
+        {desk === "thread" ? (
+        <>
+        <section className="rounded-3xl border border-border bg-card p-4 shadow-sm">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">Kundendialog</p>
+              <h2 className="text-lg font-semibold text-foreground">Gespräch</h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => setDesk("overview")}
+              className="rounded-full border border-border px-3 py-1.5 text-xs font-semibold"
+            >
+              Zur Übersicht
+            </button>
+          </div>
           <div className="flex flex-wrap items-end gap-3">
             <label className="min-w-[180px] text-xs font-semibold text-slate-600">
               Kanal
@@ -266,13 +287,16 @@ export function AiReceptionistWorkspace() {
           ) : null}
         </section>
 
-        <div className="grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)_minmax(260px,0.7fr)]">
+        <div className="grid gap-4 xl:grid-cols-[280px_minmax(0,1fr)_minmax(240px,0.7fr)]">
           <OwnerInbox
             conversations={inbox}
             activeId={conversation?.id ?? null}
             channelFilter={channelFilter}
             onChannelFilter={setChannelFilter}
-            onOpen={openConversation}
+            onOpen={(item) => {
+              openConversation(item);
+              setDesk("thread");
+            }}
             onDismiss={(conversationId, alertId) => void dismissAlert(conversationId, alertId)}
           />
           <AiChatPanel
@@ -288,6 +312,8 @@ export function AiReceptionistWorkspace() {
             onApprove={() => void approveBooking()}
           />
         </div>
+        </>
+        ) : null}
       </div>
     </div>
   );

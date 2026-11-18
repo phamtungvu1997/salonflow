@@ -108,7 +108,7 @@ export async function createBooking(
     serviceId: input.serviceId,
     date: input.date,
     start: input.start,
-    notes: input.notes ?? "Gebucht über KI-Rezeption Simulator",
+    notes: input.notes ?? "Gebucht über Kundendialog",
     idempotencyKey: input.idempotencyKey,
   });
 }

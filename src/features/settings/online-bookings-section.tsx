@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 
 import type {
   SalonSettingsRecord,
@@ -581,16 +581,16 @@ function BookingRequestsPanel({ salonId }: { salonId: string }) {
   >([]);
   const [error, setError] = useState<string | null>(null);
 
-  async function load() {
+  const load = useCallback(async () => {
     const response = await fetch(`/api/online-booking/requests?salonId=${encodeURIComponent(salonId)}`);
     if (!response.ok) return;
     const body = (await response.json()) as { requests?: typeof rows };
     setRows(body.requests ?? []);
-  }
+  }, [salonId]);
 
   useEffect(() => {
     void load();
-  }, [salonId]);
+  }, [load]);
 
   async function decide(requestId: string, decision: "approve" | "reject") {
     setError(null);

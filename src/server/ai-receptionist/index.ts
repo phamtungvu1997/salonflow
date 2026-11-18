@@ -1,4 +1,5 @@
 export { approveBooking, startConversation, handleCustomerMessage } from "./orchestrator";
+export { sendOwnerReply } from "./owner-reply";
 export {
   clearAiConversationsForTests,
   getConversation,

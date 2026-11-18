@@ -63,7 +63,7 @@ export function IntegrationsWorkspace() {
               <div>
                 <h1 className="text-2xl font-bold text-slate-900">Integrationen</h1>
                 <p className="mt-1 max-w-2xl text-sm text-slate-600">
-                  Kanäle für die spätere KI-Rezeption vorbereiten. Es werden noch keine
+                  Kanäle für den späteren Kundendialog vorbereiten. Es werden noch keine
                   Kundenkonten verbunden und keine Nachrichten versendet.
                 </p>
               </div>

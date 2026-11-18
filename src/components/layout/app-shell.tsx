@@ -16,7 +16,13 @@ type AppShellProps = {
 
 function isPublicBookingPath(pathname: string | null): boolean {
   if (!pathname) return false;
-  return pathname === "/b" || pathname.startsWith("/b/") || pathname === "/embed" || pathname.startsWith("/embed/");
+  return (
+    pathname === "/b" ||
+    pathname.startsWith("/b/") ||
+    pathname === "/embed" ||
+    pathname.startsWith("/embed/") ||
+    pathname.startsWith("/widget/")
+  );
 }
 
 function AppShellInner({ children }: AppShellProps) {

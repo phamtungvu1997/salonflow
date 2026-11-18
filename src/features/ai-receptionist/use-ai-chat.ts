@@ -197,6 +197,48 @@ export function useAiChat(salonId: string | null) {
     setError(null);
   }, []);
 
+  const sendOwnerReply = useCallback(
+    async (payload: {
+      conversationId: string;
+      kind: "nail_quote" | "complaint";
+      quoteEuros?: number;
+      note?: string;
+      complaintChoice?: "apology" | "rebook" | "goodwill" | "callback";
+    }) => {
+      if (!salonId) return;
+      setError(null);
+      const res = await fetch("/api/ai-receptionist/inbox", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ salonId, ...payload }),
+      });
+      const body = (await res.json().catch(() => ({}))) as {
+        error?: string;
+        conversation?: ConversationPublicView;
+      };
+      if (!res.ok) {
+        setError(body.error ?? "Die Antwort konnte nicht gesendet werden.");
+        return;
+      }
+      const next = body.conversation;
+      if (next) {
+        setConversation((current) =>
+          current?.id === next.id
+            ? {
+                ...next,
+                alerts: next.alerts ?? [],
+                suggestedServices: next.suggestedServices ?? [],
+                suggestedStaff: next.suggestedStaff ?? [],
+                offeredSlots: next.offeredSlots ?? [],
+              }
+            : current,
+        );
+      }
+      await loadInbox();
+    },
+    [salonId, loadInbox],
+  );
+
   const dismissAlert = useCallback(
     async (conversationId: string, alertId: string) => {
       if (!salonId) return;
@@ -244,6 +286,7 @@ export function useAiChat(salonId: string | null) {
     approveBooking,
     openConversation,
     dismissAlert,
+    sendOwnerReply,
     resetChat,
   };
 }

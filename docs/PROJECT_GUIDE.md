@@ -36,9 +36,9 @@ A saved appointment keeps the service name, duration, and price from that moment
 |---|---|---|
 | Calendar | `/kalender` | Day and week grid, create and cancel appointments, absences in the staff column |
 | Customers | `/kunden` | Directory and profile. Removing a customer archives them |
-| Settings | `/einstellungen` | Services, staff, hours, holidays, rooms, online booking, accounts |
+| Settings | `/einstellungen` | Services, staff, hours, holidays, rooms, online booking, accounts, software billing |
 | Marketing | `/marketing` | Last-minute discount, dynamic price windows, discount codes, waiting list |
-| AI desk | `/ki-rezeption` | Simulator chats plus the owner inbox |
+| Kundendialog | `/ki-rezeption` | Owner dashboard for chats, approvals, nail photos, and complaints |
 | Public booking | `/b/{token}` | Customer link. Embed form is `/embed/{token}` |
 
 Holidays for Hamburg are prefilled under **Einstellungen → Abwesenheiten**. A locked holiday writes one absence per active staff member from 08:00 to 20:00, so the calendar and the engine both close that day. Uncheck **Sperren** or delete the row to open it again.
@@ -62,22 +62,40 @@ Internal calendar bookings keep the catalog price unless the server passes an ex
 
 Waiting-list rows do not reserve a chair and do not change a price.
 
+## Small widgets
+
+These settings used to be closed. They now read and write the salon’s own data.
+
+- **MwSt.-Sätze** stores the rates. The default rate is the one a receipt uses.
+- **Treuepunkte** adds a point when an appointment is marked completed, or one point per configured euro of the stored price. Points are kept per customer and are not a payment.
+- **Rechnungen & Belege** stores the header, footer, and whether the date is shown. The footer states that payment happens in the salon.
+- **Mikroseite** at `/widget/seite/{salonId}` shows the saved title, text, and contact email.
+- **Preislisten-Widget** at `/widget/preise/{salonId}` lists active services with duration and catalog price. The settings page gives the iframe size and a copyable snippet.
+- **Bewertungs-Widget** at `/widget/feedback/{salonId}` stores a 1–5 rating and a comment for that salon.
+- **Gutschein-Widget** at `/widget/gutschein/{salonId}` stores a request. No amount is charged and no voucher email is sent.
+
+## Software billing
+
+**Einstellungen → Abrechnung** is the salon’s own SalonFlow subscription, not a customer checkout and not card charging.
+
+The Studio plan is 59,00 €. Two active staff seats are included. Each further active staff member adds 5,00 € for that month. The page creates the current month’s invoice, marks it overdue after the 10th, and lists paid invoices after **Zahlung vermerken**. **PDF** opens a transfer note with the invoice number as the reference. **Merken** stores automatic payment as a preference only. No bank or card is debited.
+
 ## Online booking settings
 
 **Einstellungen → Online-Buchungen** controls the public link: language, direct booking versus request, existing customers only, staff choice, top services, interval, notice, how far ahead, gap avoidance, address and birth date, color, and the share link or embed code.
 
 **Freigeben** on a booking request creates the appointment through the engine and applies the current last-minute or dynamic window. Card payment stays off.
 
-## AI receptionist
+## Kundendialog
 
-**KI-Rezeption** is a simulator. Live WhatsApp, Instagram, and TikTok sending stays off until those flags are explicitly enabled.
+The section is named **Kundendialog** and lives at `/ki-rezeption`. The first screen is an owner dashboard: conversations by channel, open hints, recent dialogs, and bookings waiting for approval. **Neues Gespräch** opens the chat. Live WhatsApp, Instagram, and TikTok sending stays off until those flags are explicitly enabled.
 
 - **Chat starten** opens a direct conversation.
 - **Kommentar unter einem Beitrag** (Instagram or TikTok) drafts one private reply with a price from the catalog and the booking link. Nothing is posted.
 - **E-Mail lesen** matches the From address to a customer of this salon and treats the text like a chat message.
 - A booking is stored only after **Freigeben und buchen**.
 
-**Inhaber-Posteingang** lists every channel. It raises a hint when a booking needs approval, when the customer sends **Nagelbild senden**, or when the message is a complaint. The agent does not invent a price from a nail photo. **Gelesen** clears the hint.
+The dashboard sorts work into three queues. A nail photo waits until you enter a price; **Angebot senden** writes that price back into the same WhatsApp, Instagram, TikTok, or email thread, with the booking link. A complaint offers Entschuldigung, a new appointment, 10 € goodwill, or a callback, and that choice is the reply in the same channel. Nothing is sent to a live account. The agent still does not invent a price from the photo.
 
 ## Checks
 

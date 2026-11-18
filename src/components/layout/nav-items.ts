@@ -48,8 +48,8 @@ export const primaryNav: NavItem[] = [
   },
   {
     href: "/ki-rezeption",
-    label: "KI-Rezeption",
+    label: "Kundendialog",
     icon: Bot,
-    description: "KI-gestützte Terminannahme",
+    description: "Nachrichten und Freigaben",
   },
 ];
