@@ -126,6 +126,7 @@ export function useSalonLiveUpdates(
         source = null;
       }
       mode = "sse";
+      let preferPoll = false;
       const params = new URLSearchParams({ salonId });
       if (cursorRef.current) params.set("cursor", cursorRef.current);
       const next = new EventSource(`/api/events?${params.toString()}`, {
@@ -172,6 +173,13 @@ export function useSalonLiveUpdates(
         if (cancelled) return;
         try {
           const payload = JSON.parse((event as MessageEvent).data) as { code?: string };
+          if (payload.code === "poll") {
+            preferPoll = true;
+            next.close();
+            source = null;
+            startPolling("primary");
+            return;
+          }
           if (payload.code === "forbidden" || payload.code === "expired") {
             next.close();
             source = null;
@@ -183,7 +191,7 @@ export function useSalonLiveUpdates(
       });
 
       next.onerror = () => {
-        if (cancelled) return;
+        if (cancelled || preferPoll) return;
         next.close();
         source = null;
         startPolling("fallback");

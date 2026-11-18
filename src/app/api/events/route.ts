@@ -11,13 +11,20 @@ import { BookingError } from "@/server/time";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
+/** Stay under the hosted function limit. The local dev server can hold a stream much longer. */
+export const maxDuration = 30;
 
 const SSE_POLL_MS = 2_000;
 const SSE_HEARTBEAT_MS = 15_000;
 /** Re-check session + salon membership periodically (SF-044 mid-stream revoke). */
 const SSE_REVALIDATE_EVERY_TICKS = 8; // ~16s at SSE_POLL_MS
-/** Bound open streams so clients reconnect with a fresh auth check. */
-const SSE_MAX_DURATION_MS = 15 * 60 * 1000;
+/**
+ * Local streams stay open for a fresh auth check. Hosted functions are killed
+ * at the platform limit if a stream outlives it, which surfaces as a runtime
+ * error and can block the rest of the calendar. Close those early and let the
+ * client poll.
+ */
+const SSE_MAX_DURATION_MS = process.env.VERCEL === "1" ? 20_000 : 15 * 60 * 1000;
 
 function wantsStream(request: Request, mode: string | null): boolean {
   if (mode === "poll") return false;
@@ -79,9 +86,9 @@ export async function GET(request: Request) {
           controller.enqueue(encoder.encode(chunk));
         };
 
-        const closeStream = (reason: "forbidden" | "expired" | "abort") => {
+        const closeStream = (reason: "forbidden" | "expired" | "poll" | "abort") => {
           if (closed) return;
-          if (reason === "forbidden" || reason === "expired") {
+          if (reason === "forbidden" || reason === "expired" || reason === "poll") {
             push(encodeSse("error", { code: reason }));
           }
           cleanup();
@@ -140,7 +147,7 @@ export async function GET(request: Request) {
           push(`: heartbeat ${Date.now()}\n\n`);
         }, SSE_HEARTBEAT_MS);
         maxDurationHandle = setTimeout(() => {
-          closeStream("expired");
+          closeStream(process.env.VERCEL === "1" ? "poll" : "expired");
         }, SSE_MAX_DURATION_MS);
 
         request.signal.addEventListener("abort", () => {
