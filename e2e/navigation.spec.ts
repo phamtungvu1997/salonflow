@@ -3,9 +3,12 @@ import { expect, test } from "@playwright/test";
 const routes = [
   { path: "/kalender", testId: "page-kalender", label: "Kalender" },
   { path: "/kunden", testId: "page-kunden", label: "Kunden" },
-  { path: "/mitarbeiter", testId: "page-mitarbeiter", label: "Mitarbeiter" },
-  { path: "/leistungen", testId: "page-leistungen", label: "Leistungen" },
+  { path: "/marketing", testId: "page-marketing", label: "Marketing" },
+  { path: "/online", testId: "page-online", label: "Online" },
   { path: "/einstellungen", testId: "page-einstellungen", label: "Einstellungen" },
+  { path: "/integrationen", testId: "page-integrationen", label: "Integrationen" },
+  { path: "/ki-rezeption", testId: "page-ki-rezeption", label: "Kundendialog" },
+  { path: "/support", testId: "page-support", label: "Support" },
 ] as const;
 
 test.describe("Hauptnavigation", () => {
@@ -21,9 +24,19 @@ test.describe("Hauptnavigation", () => {
       await page.getByTestId(`nav-${route.path.replace("/", "")}`).click();
       await expect(page).toHaveURL(new RegExp(`${route.path}$`));
       await expect(page.getByTestId(route.testId)).toBeVisible();
-      await expect(page.getByTestId("placeholder-notice")).toBeVisible();
+      if (route.path === "/kalender" || route.path === "/einstellungen") {
+        await expect(page.getByTestId("placeholder-notice")).toBeVisible();
+      }
     });
   }
+
+  test("zeigt keine doppelten Mitarbeiter- oder Leistungen-Einträge in der Hauptnavigation", async ({
+    page,
+  }) => {
+    await page.goto("/kalender");
+    await expect(page.getByTestId("nav-mitarbeiter")).toHaveCount(0);
+    await expect(page.getByTestId("nav-leistungen")).toHaveCount(0);
+  });
 
   test("kann Seitenleiste einklappen", async ({ page }) => {
     await page.goto("/kalender");
@@ -33,13 +46,12 @@ test.describe("Hauptnavigation", () => {
     await expect(sidebar).toHaveAttribute("data-collapsed", "true");
   });
 
-  test("Salon-Umschalter und Kalender-Toolbar sind sichtbar", async ({
-    page,
-  }) => {
-    await page.goto("/kalender");
-    await expect(page.getByTestId("salon-selector")).toBeVisible();
-    await expect(page.getByTestId("calendar-toolbar")).toBeVisible();
-    await expect(page.getByTestId("calendar-day-grid")).toBeVisible();
+  test("Salon-Umschalter zeigt erlaubte Salons", async ({ page }) => {
+    await page.goto("/anmelden");
+    await page.getByTestId("login-email").fill("owner@salonflow.example");
+    await page.getByTestId("login-password").fill("salonflow-dev");
+    await page.getByTestId("login-submit").click();
+    await expect(page.getByTestId("calendar-board")).toBeVisible();
     await page.getByTestId("salon-selector").selectOption("salon_juliet");
     await expect(page.getByTestId("salon-selector")).toHaveValue("salon_juliet");
   });

@@ -29,3 +29,22 @@ Check: Does the demo look and behave as agreed? Can receptionist reproduce in un
 
 ## Parallelism rule
 One implementer owns an integration surface at a time. UI/UX can research and document parallel to backend architecture, but shared API/types must be agreed first. Security reviewer and QA ideally independently inspect proposed implementation, not just its summary.
+
+## Mandatory four-gate release & feature checklist (GATE A–D)
+
+Every user-facing or video-reconstructed feature must pass all four gates before completion:
+
+- **GATE A — Architecture & Code Quality**:
+  - Preserves `docs/MASTER_ARCHITECTURE.md` (V2), salon-scoped authorization, and PostgreSQL booking invariants (`src/server/booking.ts`).
+  - Modular React/TypeScript implementation separating presentation components, hooks/state, API integration, and validation (no monolithic components or speculative schema expansion).
+  - Traceable to `SF-001–SF-048`, `T-matrix` IDs, and observed reference evidence.
+- **GATE B — Functional & Regression Tests**:
+  - Baseline recorded before edits; zero weakened or deleted tests.
+  - Passes `npm run typecheck`, `npm run lint`, `npm test` (unit), `npm run test:integration` (PostgreSQL integration), and `npm run test:e2e` (Playwright E2E including cross-module Customer ↔ Calendar booking flows).
+- **GATE C — Visual & Interaction Fidelity**:
+  - Verified via Playwright screenshots at matched viewport states against sanitized reference frames/video evidence (layout proportions, table/calendar density, dialogs, hover/selected/focus states, keyboard & Escape behavior).
+  - Zero unredacted real customer PII in Git, fixtures, or screenshots.
+- **GATE D — Product Owner Approval**:
+  - Live running preview demonstrated on `localhost` with branch/commit identification, visual comparisons, test outputs, and honest disclosure of deferred V1 items.
+  - Explicit Owner sign-off required before proceeding to subsequent modules, merging, or deploying.
+

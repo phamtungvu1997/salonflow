@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
+import { SalonflowLogo } from "@/components/brand/salonflow-logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -17,40 +19,53 @@ import { primaryNav } from "./nav-items";
 
 type AppSidebarProps = {
   collapsed: boolean;
+  mobileOpen: boolean;
   onToggle: () => void;
+  onNavigate: () => void;
 };
 
-export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
+export function AppSidebar({ collapsed, mobileOpen, onToggle, onNavigate }: AppSidebarProps) {
   const pathname = usePathname();
+  const [narrow, setNarrow] = useState(false);
+
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 767px)");
+    const apply = () => setNarrow(query.matches);
+    apply();
+    query.addEventListener("change", apply);
+    return () => query.removeEventListener("change", apply);
+  }, []);
+
+  const iconOnly = collapsed && !narrow;
 
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={80}>
       <aside
         className={cn(
-          "relative flex h-full flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-out",
-          collapsed ? "w-[72px]" : "w-[200px]",
+          "relative z-40 flex h-full w-[200px] flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-transform duration-150 ease-out",
+          "max-md:fixed max-md:inset-y-0 max-md:left-0",
+          mobileOpen ? "max-md:translate-x-0" : "max-md:-translate-x-full",
+          "md:translate-x-0",
+          collapsed ? "md:w-[72px]" : "md:w-[200px]",
         )}
         data-testid="app-sidebar"
         data-collapsed={collapsed}
       >
         <div
           className={cn(
-            "flex items-center gap-3 px-4 py-5",
-            collapsed && "justify-center px-2",
+            "flex flex-col gap-2 px-4 py-4",
+            iconOnly && "items-center px-2",
           )}
         >
-          <div className="flex size-9 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground shadow-sm">
-            <Sparkles className="size-4" aria-hidden />
-          </div>
-          {!collapsed && (
-            <div className="animate-sidebar-slide min-w-0">
-              <p className="font-display text-lg leading-none tracking-tight">
-                Salonflow
-              </p>
-              <p className="mt-1 truncate text-xs text-sidebar-foreground/60">
-                Jeannie · Juliet
-              </p>
-            </div>
+          <SalonflowLogo
+            variant={iconOnly ? "sidebar-collapsed" : "sidebar-expanded"}
+            priority
+            className={cn(!iconOnly && "overflow-hidden")}
+          />
+          {!iconOnly && (
+            <p className="truncate text-xs text-sidebar-foreground/60">
+              Jeannie · Juliet
+            </p>
           )}
         </div>
 
@@ -67,20 +82,21 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
                 asChild
                 variant={active ? "sidebar-active" : "sidebar"}
                 size="sidebar-item"
-                className={cn(collapsed && "justify-center px-0")}
+                className={cn(iconOnly && "justify-center px-0")}
               >
                 <Link
                   href={item.href}
                   aria-current={active ? "page" : undefined}
                   data-testid={`nav-${item.href.replace("/", "")}`}
+                  onClick={onNavigate}
                 >
                   <Icon className="size-4 shrink-0" />
-                  {!collapsed && <span>{item.label}</span>}
+                  {!iconOnly && <span>{item.label}</span>}
                 </Link>
               </Button>
             );
 
-            if (!collapsed) {
+            if (!iconOnly) {
               return link;
             }
 
@@ -94,22 +110,22 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         </nav>
 
         <div className="p-3">
-          {!collapsed && (
-            <div className="mb-3 rounded-lg bg-sidebar-accent/70 px-3 py-3 text-xs text-sidebar-foreground/70 animate-sidebar-slide">
-              Platzhalterdaten — noch keine Terminpersistenz.
+          {!iconOnly && (
+            <div className="mb-3 rounded-lg bg-sidebar-accent/70 px-3 py-3 text-xs text-sidebar-foreground/70">
+              Entwicklungsdaten. Termine werden in PostgreSQL gespeichert.
             </div>
           )}
           <Button
             type="button"
             variant="sidebar"
-            size={collapsed ? "icon" : "sidebar-item"}
-            className={cn("w-full", collapsed && "mx-auto")}
+            size={iconOnly ? "icon" : "sidebar-item"}
+            className={cn("hidden w-full md:inline-flex", iconOnly && "mx-auto")}
             onClick={onToggle}
-            aria-label={collapsed ? "Seitenleiste erweitern" : "Seitenleiste einklappen"}
+            aria-label={iconOnly ? "Seitenleiste erweitern" : "Seitenleiste einklappen"}
             data-testid="sidebar-toggle"
           >
-            {collapsed ? <ChevronRight /> : <ChevronLeft />}
-            {!collapsed && <span>Einklappen</span>}
+            {iconOnly ? <ChevronRight /> : <ChevronLeft />}
+            {!iconOnly && <span>Einklappen</span>}
           </Button>
         </div>
       </aside>

@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="520" viewBox="0 0 920 520" role="img" aria-label="Salonized interaction motion tokens schematic">
+  <title>Salonized interaction &amp; motion tokens (sanitized schematic)</title>
+  <rect width="920" height="520" fill="#f7f6f4"/>
+  <text x="24" y="36" font-family="Segoe UI, sans-serif" font-size="18" fill="#1c1d29">Salonized  observed motion tokens (schematic, no PII)</text>
+  <text x="24" y="58" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">Source: live CSS + MutationObserver samples 2026-11-08. Durations from stylesheets unless noted.</text>
+
+  <rect x="24" y="80" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="40" y="108" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Dropdown list</text>
+  <text x="40" y="132" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">fade-slide-down</text>
+  <text x="40" y="152" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">opacity + translateY(-10px)</text>
+  <text x="40" y="172" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">H 0.10s (CSS)</text>
+
+  <rect x="320" y="80" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="336" y="108" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Chevron in select</text>
+  <text x="336" y="132" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">chevron / chevron-reverse</text>
+  <text x="336" y="152" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">opacity + translateY ±50%</text>
+  <text x="336" y="172" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">H 0.12s (CSS)</text>
+
+  <rect x="616" y="80" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="632" y="108" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Primary button</text>
+  <text x="632" y="132" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">bg 0.15s · active scale(0.97)</text>
+  <text x="632" y="152" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">hover via --action-primary-hover</text>
+  <text x="632" y="172" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">reduced-motion: no scale</text>
+
+  <rect x="24" y="220" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="40" y="248" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Popover / pop enter</text>
+  <text x="40" y="272" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">pop-enter-active</text>
+  <text x="40" y="292" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">transform + opacity</text>
+  <text x="40" y="312" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">H 0.15s cubic-bezier(0.175,0.885,0.32,1.275)</text>
+
+  <rect x="320" y="220" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="336" y="248" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Toast / notification</text>
+  <text x="336" y="272" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">v-enter scale(0.5)’1</text>
+  <text x="336" y="292" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">enter H 0.2s + 0.1s delay</text>
+  <text x="336" y="312" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">leave opacity H 0.1s</text>
+
+  <rect x="616" y="220" width="280" height="120" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="632" y="248" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">Calendar item</text>
+  <text x="632" y="272" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">opacity transition 0.15s</text>
+  <text x="632" y="292" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">drag: opacity 0.75 (FC CSS)</text>
+  <text x="632" y="312" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">highlight shadow when selected</text>
+
+  <rect x="24" y="360" width="872" height="140" rx="8" fill="#fff" stroke="#c9ccd4"/>
+  <text x="40" y="388" font-family="Segoe UI, sans-serif" font-size="14" font-weight="600" fill="#1c1d29">SalonFlow guidance (PROPOSED)</text>
+  <text x="40" y="414" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">Match familiar short durations (H100150ms). Prefer opacity/transform only. Honor prefers-reduced-motion.</text>
+  <text x="40" y="438" font-family="Segoe UI, sans-serif" font-size="12" fill="#1c1d29">Never animate away booking errors or race 409s. Dense day grid: avoid layout-thrashing transitions on every cell.</text>
+  <text x="40" y="462" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">Live calendar screenshots omitted (customer PII). This schematic is the committed visual evidence for motion tokens.</text>
+  <text x="40" y="486" font-family="Segoe UI, sans-serif" font-size="12" fill="#5c5f6a">Evidence confidence: CSS durations OBSERVED · create overlay enter sampled ~92ms class presence · drag live UX UNVERIFIED.</text>
+</svg>

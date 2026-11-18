@@ -9,12 +9,13 @@ Deliver functioning, reliable, production-ready **internal** booking software fo
 ## Source of truth (read in this order)
 
 1. [`docs/MASTER_ARCHITECTURE.md`](docs/MASTER_ARCHITECTURE.md) — product scope, architecture, milestones `M00–M19`, test program
-2. [`docs/DOC_CONFLICTS.md`](docs/DOC_CONFLICTS.md) — kit vs V2 overrides (**V2 wins**)
-3. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Architecture Decision Records
-4. [`docs/feature-specs/`](docs/feature-specs/) — approved SPEC-* tickets
-5. Supporting kit specs: [`docs/01_PRODUCT_CHARTER.md`](docs/01_PRODUCT_CHARTER.md) … [`docs/10_TRACEABILITY.md`](docs/10_TRACEABILITY.md)
-6. Backlog: [`tasks/INITIAL_ISSUES.md`](tasks/INITIAL_ISSUES.md) (NS-* mapped to V2 in DOC_CONFLICTS)
-7. This file — coordination and hard constraints
+2. [`docs/DOC_CONFLICTS.md`](docs/DOC_CONFLICTS.md) — overrides when other docs disagree (**V2 wins**)
+3. [`docs/SALONIZED_FUNCTIONAL_GUIDELINE.md`](docs/SALONIZED_FUNCTIONAL_GUIDELINE.md) — behavioral rules SF-001–SF-048 (does not override architecture)
+4. [`docs/DECISIONS.md`](docs/DECISIONS.md) — Architecture Decision Records
+5. [`docs/feature-specs/`](docs/feature-specs/) — approved SPEC-* tickets
+6. Supporting kit specs: [`docs/01_PRODUCT_CHARTER.md`](docs/01_PRODUCT_CHARTER.md) … [`docs/10_TRACEABILITY.md`](docs/10_TRACEABILITY.md)
+7. Backlog: [`tasks/INITIAL_ISSUES.md`](tasks/INITIAL_ISSUES.md) and [`tasks/CROSS_MODULE_CONTRACT.md`](tasks/CROSS_MODULE_CONTRACT.md)
+8. This file — coordination and hard constraints
 
 Do **not** invent parallel conflicting rule systems. Historical baselines (`BASELINE_BLUEPRINT`, `PHASE_A_REFERENCE`, `MASTER_PROMPT_REFERENCE`, `KIT_*`) are reference only.
 
@@ -54,11 +55,19 @@ One Next.js App Router application at the repository root. Feature modules under
 ## Delivery loop
 
 1. Read architecture + DOC_CONFLICTS + relevant SPEC/NS ticket
-2. Isolated feature branch
-3. Smallest working slice
-4. Lint → typecheck → unit tests → build → Playwright (and DB tests when applicable)
-5. Draft PR with evidence (commands, results, screenshots)
-6. Independent review + Owner acceptance before merge
+2. Isolated feature branch (preserve uncommitted work; small, reviewable commits)
+3. Establish test baseline, identify affected modules/APIs, and define acceptance criteria
+4. Smallest working slice with modular React components (separate presentation, state/hooks, data fetching, API integration, and validation—no monolithic files)
+5. Lint → typecheck → unit tests → PostgreSQL integration tests → build → Playwright E2E + visual comparison against reference evidence
+6. Draft PR with traceability evidence (`SF-001–SF-048`, `T-matrix`, commands, results, sanitized screenshots)
+7. Pass all four mandatory quality gates (`GATE A` Architecture/Code Quality, `GATE B` Functional/Regression Tests, `GATE C` Visual/Interaction Fidelity, `GATE D` Product Owner Approval) before merge
+
+## Architecture, maintainability & regression protection
+
+- **Master Architecture V2 governs**: Video-driven UI reconstruction is a requirements-discovery and visual-verification technique within our spec-driven framework—never a replacement for `docs/MASTER_ARCHITECTURE.md`.
+- **Protect the booking engine**: `src/server/booking.ts` and PostgreSQL constraints (`resource_allocations_no_overlap`, working-hour & absence validation, idempotency, version checks, service snapshots, salon-scoped auth) are the sole authority for allocations. UI components never authorize availability or write allocations directly.
+- **Modular frontend**: Keep components focused and reusable (tables, dialogs, forms, toolbars, selectors, profiles). Do not introduce new frameworks, state libraries, or speculative database tables without an approved ADR and Owner sign-off.
+- **Regression discipline**: Never weaken or delete tests to get green results. Distinguish pre-existing failures from newly introduced regressions and verify cross-module contracts (e.g., Customer ↔ Calendar booking lookup and history).
 
 ## Language and naming
 

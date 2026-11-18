@@ -1,0 +1,7 @@
+# Block all raw Salonized captures from commits until Owner provides redacted versions.
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.mp4
+*.webm

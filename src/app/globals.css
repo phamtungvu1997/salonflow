@@ -11,10 +11,17 @@
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    transition: background-color 160ms ease, color 160ms ease;
   }
 
   ::selection {
-    background: color-mix(in srgb, var(--salon-blush) 40%, white);
+    background: color-mix(in srgb, var(--ring) 28%, white);
+  }
+
+  h1,
+  .font-display {
+    letter-spacing: -0.03em;
+    font-weight: 500;
   }
 }
 
@@ -31,5 +38,158 @@
       var(--salon-hatch) 4px,
       var(--salon-hatch) 8px
     );
+  }
+}
+
+/* Dark mode covers the many hard-coded light surfaces. Colored appointment chips keep their ink. */
+html.dark .bg-white,
+html.dark .bg-slate-50,
+html.dark .bg-\[\#ffffff\],
+html.dark .bg-\[\#fafbfc\],
+html.dark .bg-\[\#fff\] {
+  background-color: var(--card);
+}
+
+html.dark .bg-\[\#f4f5f7\],
+html.dark .bg-\[\#f3f5f7\],
+html.dark .bg-\[\#efeae2\],
+html.dark .bg-\[\#f7f2f5\],
+html.dark .bg-\[\#f3f3f3\],
+html.dark .bg-slate-100,
+html.dark .bg-\[\#f4f5f7\]\/80 {
+  background-color: var(--background);
+}
+
+html.dark .bg-slate-200,
+html.dark .bg-slate-200\/80,
+html.dark .bg-\[\#eef0f3\],
+html.dark .bg-\[\#f0f4ff\],
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover,
+html.dark .hover\:bg-\[\#f4f5f7\]:hover,
+html.dark .hover\:bg-\[\#eef0f3\]:hover,
+html.dark .hover\:bg-white:hover {
+  background-color: var(--secondary);
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700,
+html.dark .text-\[\#1c1e21\],
+html.dark .text-\[\#111827\],
+html.dark .hover\:text-\[\#1c1e21\]:hover {
+  color: var(--foreground);
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500,
+html.dark .text-slate-400,
+html.dark .text-\[\#6d7480\],
+html.dark .text-\[\#5f7084\],
+html.dark .text-\[\#8b919a\],
+html.dark .text-\[\#98a0aa\] {
+  color: var(--muted-foreground);
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-300,
+html.dark .border-\[\#e1e4ea\],
+html.dark .border-\[\#e6e8ee\],
+html.dark .border-\[\#eef0f3\],
+html.dark .border-\[\#c5cad3\],
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: var(--border);
+}
+
+html.dark [style*="background"] .text-\[\#1c1e21\],
+html.dark [style*="background"].text-\[\#1c1e21\] {
+  color: #1c1e21;
+}
+
+html.dark input,
+html.dark textarea,
+html.dark select {
+  color: var(--foreground);
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: var(--muted-foreground);
+}
+
+/* Pull the repeated navy and cool-gray surfaces onto the SalonFlow palette. */
+.bg-\[\#18202c\],
+.bg-\[\#111827\],
+.bg-slate-900 {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+}
+
+.hover\:bg-slate-800:hover,
+.hover\:bg-\[\#1f2937\]:hover {
+  background-color: color-mix(in srgb, var(--primary) 82%, white);
+}
+
+.bg-\[\#f4f5f7\],
+.bg-\[\#f3f5f7\],
+.bg-\[\#f7faf9\] {
+  background-color: transparent;
+}
+
+.border-slate-200,
+.border-\[\#e1e4ea\],
+.border-\[\#e6e8ee\] {
+  border-color: var(--border);
+}
+
+.rounded-xl,
+.rounded-2xl {
+  border-radius: 0.625rem;
+}
+
+.page-enter {
+  animation: page-enter 120ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0.72;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media print {
+  body:has(.reports-sheet) * {
+    visibility: hidden;
+  }
+
+  body:has(.reports-sheet) .reports-sheet,
+  body:has(.reports-sheet) .reports-sheet * {
+    visibility: visible;
+  }
+
+  .reports-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter,
+  .animate-fade-up,
+  .animate-sidebar-slide {
+    animation: none;
+  }
+
+  body,
+  aside {
+    transition: none;
   }
 }

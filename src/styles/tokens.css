@@ -1,50 +1,88 @@
-/* SalonFlow design tokens — M02. Original palette; not Salonized assets. */
+/* SalonFlow design tokens. Ink desk: paper, stone, one accent. */
 
 :root {
-  --background: #f3f5f7;
-  --foreground: #1a222d;
-  --card: #ffffff;
-  --card-foreground: #1a222d;
-  --popover: #ffffff;
-  --popover-foreground: #1a222d;
-  --primary: #243041;
-  --primary-foreground: #f8fafc;
-  --secondary: #e9eef3;
-  --secondary-foreground: #243041;
-  --muted: #eef2f6;
-  --muted-foreground: #5f7084;
-  --accent: #f3dde3;
-  --accent-foreground: #5c3140;
+  --background: #f4f3ef;
+  --foreground: #1c1917;
+  --card: #fffcf8;
+  --card-foreground: #1c1917;
+  --popover: #fffcf8;
+  --popover-foreground: #1c1917;
+  --primary: #1c1917;
+  --primary-foreground: #f7f4ee;
+  --secondary: #eceae4;
+  --secondary-foreground: #292524;
+  --muted: #f7f5f1;
+  --muted-foreground: #78716c;
+  --accent: #e7f0ea;
+  --accent-foreground: #1f4d3a;
   --destructive: #b42318;
   --destructive-foreground: #fff7f6;
-  --border: #d5dce5;
-  --input: #d5dce5;
-  --ring: #c98697;
-  --chart-1: #c98697;
-  --chart-2: #8fb4a8;
-  --chart-3: #c9b6a5;
-  --chart-4: #9bb0c7;
-  --chart-5: #b7c9a5;
-  --radius: 0.45rem;
+  --border: #e4e1da;
+  --input: #d9d5cc;
+  --ring: #1f6b4a;
+  --chart-1: #1f6b4a;
+  --chart-2: #8a6a3b;
+  --chart-3: #3f5f7a;
+  --chart-4: #a15c4a;
+  --chart-5: #6b705c;
+  --radius: 0.5rem;
 
-  --sidebar: #171e29;
-  --sidebar-foreground: #e8eef5;
-  --sidebar-primary: #d4a0ad;
-  --sidebar-primary-foreground: #2a151c;
-  --sidebar-accent: #2a3444;
-  --sidebar-accent-foreground: #f7fafc;
-  --sidebar-border: #2a3546;
-  --sidebar-ring: #d4a0ad;
+  --sidebar: #171614;
+  --sidebar-foreground: #f4f1ea;
+  --sidebar-primary: #f4f1ea;
+  --sidebar-primary-foreground: #171614;
+  --sidebar-accent: #2a2825;
+  --sidebar-accent-foreground: #f4f1ea;
+  --sidebar-border: #2e2c29;
+  --sidebar-ring: #c4a574;
 
-  --salon-ink: #171e29;
-  --salon-slate: #5f7084;
-  --salon-mist: #f3f5f7;
-  --salon-blush: #d4a0ad;
-  --salon-sage: #8fb4a8;
-  --salon-sand: #c9b6a5;
-  --salon-hatch: rgba(95, 112, 132, 0.18);
+  --salon-ink: #1c1917;
+  --salon-slate: #78716c;
+  --salon-mist: #f4f3ef;
+  --salon-blush: #c4a9a0;
+  --salon-sage: #7d9a86;
+  --salon-sand: #c4b49a;
+  --salon-hatch: rgba(28, 25, 23, 0.08);
+
+  /* Brand accents derived from approved logo (not calendar status colors). */
+  --brand-coral: #f28b7a;
+  --brand-magenta: #c94f9a;
+  --brand-purple: #5b2d8a;
+  --brand-ink: #3b1f66;
+  --brand-ring: #c94f9a;
 
   --cal-row-height: 28px;
   --cal-staff-min: 145px;
   --cal-time-width: 56px;
+}
+
+html.dark {
+  color-scheme: dark;
+  --background: #121110;
+  --foreground: #f4f1ea;
+  --card: #1c1b19;
+  --card-foreground: #f4f1ea;
+  --popover: #1c1b19;
+  --popover-foreground: #f4f1ea;
+  --primary: #f4f1ea;
+  --primary-foreground: #171614;
+  --secondary: #2a2825;
+  --secondary-foreground: #f4f1ea;
+  --muted: #221f1c;
+  --muted-foreground: #a8a29e;
+  --accent: #24352c;
+  --accent-foreground: #d7efe3;
+  --border: #34312c;
+  --input: #34312c;
+  --ring: #8fbfa4;
+  --sidebar: #0e0d0c;
+  --sidebar-foreground: #f4f1ea;
+  --sidebar-primary: #f4f1ea;
+  --sidebar-primary-foreground: #171614;
+  --sidebar-accent: #262421;
+  --sidebar-border: #2a2825;
+  --salon-ink: #f4f1ea;
+  --salon-slate: #a8a29e;
+  --salon-mist: #121110;
+  --salon-hatch: rgba(244, 241, 234, 0.08);
 }

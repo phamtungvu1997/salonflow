@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1100" height="720" viewBox="0 0 1100 720" role="img" aria-labelledby="title desc">
+  <title id="title">Customers directory reconstruction</title>
+  <desc id="desc">Reconstruction from a read-only Salonized session on 2026-11-08. Not a photograph. Fictional rows only.</desc>
+  <rect width="1100" height="720" fill="#eef1f4"/>
+  <rect width="64" height="720" fill="#1c2430"/>
+  <text x="18" y="36" fill="#fff" font-family="Segoe UI, Arial, sans-serif" font-size="11">nav</text>
+  <rect x="64" y="0" width="1036" height="52" fill="#fff"/>
+  <text x="88" y="32" font-family="Segoe UI, Arial, sans-serif" font-size="16" fill="#1b2430">Customers</text>
+  <rect x="64" y="52" width="220" height="44" fill="#fff"/>
+  <text x="80" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1b2430">Customer list</text>
+  <text x="190" y="78" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#667085">Customer groups</text>
+  <rect x="80" y="112" width="280" height="36" rx="6" fill="#fff" stroke="#d0d5dd"/>
+  <text x="94" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#98a2b3">Search&</text>
+  <rect x="368" y="112" width="36" height="36" rx="6" fill="#fff" stroke="#d0d5dd"/>
+  <text x="378" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#667085">¾</text>
+  <rect x="860" y="112" width="36" height="36" rx="6" fill="#fff" stroke="#d0d5dd"/>
+  <text x="868" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">"""</text>
+  <rect x="904" y="112" width="150" height="36" rx="6" fill="#1b2430"/>
+  <text x="922" y="135" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#fff">Create customer</text>
+  <text x="80" y="176" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#667085">Results found: N</text>
+  <rect x="80" y="192" width="974" height="40" fill="#f8fafc" stroke="#e4e7ec"/>
+  <text x="96" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">NAME</text>
+  <text x="300" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">MOBILE</text>
+  <text x="480" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">EMAIL</text>
+  <text x="700" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">NEWSLETTER</text>
+  <text x="860" y="217" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#667085">ADDRESS</text>
+  <rect x="80" y="232" width="974" height="48" fill="#fff" stroke="#e4e7ec"/>
+  <text x="96" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1b2430">Anna Berger</text>
+  <text x="300" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#475467">fictional</text>
+  <text x="480" y="260" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#475467">fictional</text>
+  <rect x="80" y="280" width="974" height="48" fill="#fff" stroke="#e4e7ec"/>
+  <text x="96" y="308" font-family="Segoe UI, Arial, sans-serif" font-size="13" fill="#1b2430">Lena Hofmann</text>
+  <text x="820" y="300" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#1b2430">Call · Edit · Archive customer</text>
+  <text x="80" y="360" font-family="Segoe UI, Arial, sans-serif" font-size="12" fill="#667085">Empty search: No results found. No row checkboxes observed. Header click did not sort.</text>
+  <text x="80" y="690" font-family="Segoe UI, Arial, sans-serif" font-size="11" fill="#98a2b3">RECONSTRUCTION  not a photograph. Live rows were not saved.</text>
+</svg>

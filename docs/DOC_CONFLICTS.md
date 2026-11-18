@@ -14,6 +14,10 @@ Kit docs `01`–`10`, baselines, and `KIT_*` files are supporting detail. If the
 | Kit README | “No application code / CI” | Outdated — M01 app + CI exist on `feat/m01-repo-foundation` |
 | Agent reading order | Start at `01_PRODUCT_CHARTER.md` | Start at **Master Architecture**, then `01`–`10` |
 | Nav accent | Pink/coral in UI spec | Final tokens decided in **M02** UI review (M01 sage/slate is interim) |
+| Guideline gates G00–G07 | Coarser than M00–M19; G01 says “login scaffold” in the shell | Keep **M00–M19**. Login is **M05**, not M01. Guideline behavior still applies. |
+| Guideline nav includes Reports | Settings/reports screenshots show sales/VAT | V1 reports are appointment/utilization only. No POS/VAT. |
+| Chores, buffers, rooms, recurrence, waitlist | Listed in SF-028–SF-037 and FLOW-03 tabs | **P1/later** unless Owner promotes. Booking engine must leave room for extra allocation kinds; do not build those UIs in the first slice. |
+| “Four locations” example | Guideline cascade text | Product has **three** salons: Jeannie, Juliet, planned Heide. |
 
 ## NS → V2 milestone map
 

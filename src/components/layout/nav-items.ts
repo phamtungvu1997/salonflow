@@ -1,9 +1,12 @@
 import {
+  Bot,
   CalendarDays,
-  Users,
-  UserRound,
-  Scissors,
+  Globe,
+  LifeBuoy,
+  Megaphone,
+  Plug,
   Settings,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -28,21 +31,39 @@ export const primaryNav: NavItem[] = [
     description: "Kundensuche und Profile",
   },
   {
-    href: "/mitarbeiter",
-    label: "Mitarbeiter",
-    icon: UserRound,
-    description: "Team und Qualifikationen",
+    href: "/marketing",
+    label: "Marketing",
+    icon: Megaphone,
+    description: "Einblicke, Warteliste und Rabatte",
   },
   {
-    href: "/leistungen",
-    label: "Leistungen",
-    icon: Scissors,
-    description: "Kategorien und Dauer",
+    href: "/online",
+    label: "Online",
+    icon: Globe,
+    description: "Buchungslink, Webseite und Profil",
   },
   {
     href: "/einstellungen",
     label: "Einstellungen",
     icon: Settings,
     description: "Salon und Kalender",
+  },
+  {
+    href: "/integrationen",
+    label: "Integrationen",
+    icon: Plug,
+    description: "Kanäle und Anbieter verbinden",
+  },
+  {
+    href: "/ki-rezeption",
+    label: "Kundendialog",
+    icon: Bot,
+    description: "Nachrichten und Freigaben",
+  },
+  {
+    href: "/support",
+    label: "Support",
+    icon: LifeBuoy,
+    description: "Hilfe, Wünsche und Nachrichten",
   },
 ];

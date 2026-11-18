@@ -1,19 +1,16 @@
-import { PageHeader } from "@/components/layout/page-header";
-import { PlaceholderNotice } from "@/components/layout/placeholder-notice";
-import { CalendarPlaceholder } from "@/features/calendar/calendar-placeholder";
+import { CalendarBoard } from "@/features/calendar/calendar-board";
+import { initialCalendarDate } from "@/features/calendar/calendar-date";
 
-export default function KalenderPage() {
+export default async function KalenderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ datum?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const raw = Array.isArray(params.datum) ? params.datum[0] : params.datum;
   return (
-    <div data-testid="page-kalender">
-      <PageHeader
-        title="Kalender"
-        description="Dichte Tagesansicht mit Salon-Umschalter und Toolbar. Persistenz und Bibliotheks-Adapter folgen in M03–M09."
-      />
-      <PlaceholderNotice>
-        Visuelle M02-Shell mit synthetischen Daten. Termine werden nicht gespeichert
-        und stellen keine funktionierende Buchung dar.
-      </PlaceholderNotice>
-      <CalendarPlaceholder />
+    <div data-testid="page-kalender" className="flex min-h-0 flex-1 flex-col">
+      <CalendarBoard initialDate={initialCalendarDate(raw)} />
     </div>
   );
 }

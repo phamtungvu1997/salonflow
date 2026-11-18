@@ -1,27 +1,30 @@
 # Initial small, issue-ready development tickets
 
 **Canonical milestones:** Master Architecture **M00–M19** (see [`docs/DOC_CONFLICTS.md`](../docs/DOC_CONFLICTS.md) for NS→V2 map).  
-**Status notes:** NS-002/M01 engineering complete (merge pending Owner). NS-004/M02 shell+tokens on `feat/m02-m03-m04-slices`. NS-003/M03 spike harness shipped (ADR-004 not final). NS-005 schema portion (M04) Drizzle+SQL shipped. Remaining tickets PROPOSED.  
+**Cross-module behavior:** [`docs/SALONIZED_FUNCTIONAL_GUIDELINE.md`](../docs/SALONIZED_FUNCTIONAL_GUIDELINE.md) rules SF-001–SF-048 are mapped to owners, side effects, and tests in [`CROSS_MODULE_CONTRACT.md`](CROSS_MODULE_CONTRACT.md). Discovery evidence: [`docs/discovery/`](../docs/discovery/) (handoff: [`IMPLEMENTATION_HANDOFF.md`](../docs/discovery/IMPLEMENTATION_HANDOFF.md)).  
+**Status notes (2026-11-08):** NS-002/M01 done. M02/M03/M04 on shared branch. **Owner UI approved:** UI-01=B, UI-02=B, UI-03=A, UI-04=A, UI-05=A (+future color modes), UI-06=A, UI-07=defer PR#2. **NS-017** PR #1 HEAD `2b6c872` — **CI green** (lint/typecheck/unit/IT-01–08/build/e2e). Closeout commits: lockfile, migrate+seed before IT, CI exit hang, DATABASE_URL for Playwright. Harness ≠ final UI. **Awaiting Owner merge approval;** next coding = NS-008 Salonized modal.  
 `SZ-*` source map in docs/02, `T-*` tests in docs/08. Calendar spike fixtures: **≥250** events (V2), not 200.
 
-| Ticket | Task | Lead | Depends on | Evidence / exit |
+| Ticket | Task | Lead | Depends on | Status / evidence / exit |
 |---|---|---|---|---|
-| NS-001 | Audit requirements, UI screenshots and conflicts; final PRD + risk decisions | product-analyst + architect | — | Owner approves V1 scope, ADR list and 3-screen spec |
-| NS-002 | Set up Next.js/TS repo, scripts, GitHub Actions and fake fixture plumbing | devops + frontend | NS-001 | Fresh clone + reproducible lint/typecheck/test/build |
-| NS-003 | Calendar component A/B spike with 20 staff, 200 fake events | UI/UX + frontend + QA | NS-001, NS-002 | Desktop+iPad interaction comparison, ADR-001 approved |
-| NS-004 | Approve final daily calendar design tokens, responsive screen states | ui-ux-designer | NS-003 | Owner reviews own-app synthetic screenshots and 15s flow |
-| NS-005 | Catalog, staff, salons and auth model migrations with RBAC | backend | NS-001, NS-002 | Schema migrations, role and eligibility tests |
-| NS-006 | Weekly schedules, overrides, breaks and absence domain | backend | NS-005 | T-006, T-007 pass; shift edits conflict safely |
-| NS-007 | Exclusive resource allocations + server booking API | backend + QA | NS-005, NS-006 | T-002, T-003, T-005, T-009, T-012, T-013 pass |
-| NS-008 | Booking quick drawer + create end-to-end | frontend + backend | NS-004, NS-007 | T-001, T-019 pass, booking under 15s user pilot |
-| NS-009 | Move/resize/cancel/status/no-show with audit | frontend + backend + QA | NS-008 | T-004, T-010, T-011 pass, no DB partial writes |
-| NS-010 | Customer history, lookup, staff access restrictions | backend + frontend | NS-005, NS-008 | T-014 pass, customer rebook works |
-| NS-011 | Salonized import preview and idempotent staging importer | backend + security + QA | NS-010 | T-015 pass; dry-run counts/reconcile; real format only after approved sample |
-| NS-012 | Encrypted backups, restore, monitoring and staging | devops + security | NS-007 | T-016 and incident runbook pass |
-| NS-013 | Dashboard schedule, who works, utilization | ui-ux + frontend | NS-009, NS-010 | T-020 pass; synthetic dashboard reviewed |
-| NS-014 | Real multi-user refresh / reconnect behavior | backend + frontend | NS-008 | T-019 pass under simultaneous editing |
-| NS-015 | Staff acceptance, Treatwell resolution and cutover rehearsal | coordinator + QA | NS-009 through NS-014 | Zero unexplained future appointment mismatches, explicit signoff |
-| NS-016 | Optional recurring + waitlist planning only | product-analyst + architect | NS-015 | Owner decision, no premature coding |
+| NS-001 | Audit requirements, UI screenshots and conflicts; final PRD + risk decisions | product-analyst + architect | — | Largely superseded by discovery pack + M00 docs; Owner still owns open UI decisions |
+| NS-002 | Set up Next.js/TS repo, scripts, GitHub Actions and fake fixture plumbing | devops + frontend | NS-001 | **Done** (engineering) |
+| NS-003 | Calendar component A/B spike with 20 staff, ≥250 fake events | UI/UX + frontend + QA | NS-001, NS-002 | Spike harness shipped; ADR calendar library not final |
+| NS-004 | Approve final daily calendar design tokens, responsive screen states | ui-ux-designer | NS-003 + Owner UI-01/02 | **Blocked on Owner UI approval** (see handoff §5) |
+| NS-005 | Catalog, staff, salons and auth model migrations with RBAC | backend | NS-001, NS-002 | Schema + login/salon scope **partial**; Calendar-view role parity still open |
+| NS-006 | Weekly schedules, overrides, breaks and absence domain | backend | NS-005 | Shifts used by Engine; **absence CRUD + Flow D gate incomplete** |
+| NS-007 | Exclusive resource allocations + server booking API | backend + QA | NS-005, NS-006 | **Absorbed into NS-017** Engine |
+| NS-017 | PostgreSQL booking engine (create/move/cancel + IT-01–IT-08) | backend + QA | M04 schema | **CI green on PR #1** (`2b6c872`) — Owner merge approval still required; harness ≠ product UI |
+| NS-008 | Booking quick sheet + create end-to-end (Salonized-inspired, German) | frontend + backend | NS-017 closeout, NS-004 direction | **Next product E2E** — IT-09, IT-10; fix SF-020 single-txn customer+book |
+| NS-009 | Move/resize/cancel/status/no-show with audit | frontend + backend + QA | NS-008 | IT-11, IT-12; no-show retains occupancy (Flow C) |
+| NS-010 | Customer history, lookup, staff access restrictions | backend + frontend | NS-005, NS-008 | T-014 / SF-019,035 |
+| NS-011 | Salonized import preview and idempotent staging importer | backend + security + QA | NS-010 + redacted export sample | IT-14 |
+| NS-012 | Encrypted backups, restore, monitoring and staging | devops + security | NS-017 | IT-15 restore / T-016 |
+| NS-013 | Dashboard schedule, who works, utilization | ui-ux + frontend | NS-009, NS-010 | SF-045 |
+| NS-014 | Real multi-user refresh / reconnect behavior | backend + frontend | NS-008 | SF-038 |
+| NS-015 | Staff acceptance, Treatwell resolution and cutover rehearsal | coordinator + QA | NS-009 through NS-014 | Owner signoff |
+| NS-016 | Optional recurring + waitlist planning only | product-analyst + architect | NS-015 | **P2** unless Owner promotes; no premature coding |
+| NS-018 | Staff/service/timetable admin parity (post Engine) | frontend + backend | NS-017, NS-008 | SF-001, SF-007 UI polish (was “new NS-018 after NS-017”) |
 
 ## Detailed first issue — NS-001
 **Goal:** convert user screenshot observations + official help center behaviors into signed-off V1 requirements; identify unknowns, select the scope and first technical proof-of-concept. **No application code.**
