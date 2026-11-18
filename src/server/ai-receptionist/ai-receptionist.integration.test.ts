@@ -12,7 +12,25 @@ import {
 
 const salonId = "salon_jeannie";
 const actor = "user_owner";
-const bookingDate = "2026-11-17"; // Tuesday
+
+/** Next Tuesday in Berlin, at least two days ahead, so the slot is not already in the past. */
+function upcomingTuesday(now = new Date()): string {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Europe/Berlin",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    weekday: "short",
+  }).formatToParts(now);
+  const pick = (type: string) => parts.find((part) => part.type === type)?.value ?? "";
+  const weekday: Record<string, number> = { Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6, Sun: 7 };
+  let add = (2 - (weekday[pick("weekday")] ?? 1) + 7) % 7;
+  if (add < 2) add += 7;
+  const cursor = new Date(Date.UTC(Number(pick("year")), Number(pick("month")) - 1, Number(pick("day")) + add));
+  return cursor.toISOString().slice(0, 10);
+}
+
+const bookingDate = upcomingTuesday();
 
 describe.skipIf(!process.env.DATABASE_URL)("AI receptionist booking simulator", () => {
   beforeAll(() => {
