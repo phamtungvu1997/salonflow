@@ -52,7 +52,7 @@ export type IntegrationChannelState = {
   liveLocked: true;
 };
 
-const SUPPORTED = new Set(
+const SUPPORTED = new Set<string>(
   INTEGRATION_CHANNELS.filter((channel) => channel.simulator).map((channel) => channel.id),
 );
 
@@ -69,7 +69,7 @@ async function ensure(sql: Db) {
 }
 
 export function isSimulatorChannel(channel: string): channel is IntegrationChannelId {
-  return SUPPORTED.has(channel as IntegrationChannelId);
+  return SUPPORTED.has(channel);
 }
 
 export async function loadIntegrations(sql: Db, salonId: string) {
