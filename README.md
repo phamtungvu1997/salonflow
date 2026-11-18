@@ -1,108 +1,47 @@
-# Salonflow
+# SalonFlow
 
-Internes Terminbuchungssystem für Jeannie Nagelstudio, Juliet – Salon de Beauté und einen geplanten Standort in Heide.
+Internal booking desk for Jeannie Nagelstudio, Juliet – Salon de Beauté, and a future salon in Heide.
 
-**Milestone M01:** technische Grundlage, App-Shell und Navigation.  
-Es gibt **keine** funktionierende Terminpersistenz und **keine** Zahlungs-/POS-Module.
+Staff book in the calendar. Customers book through a public link. Kundendialog drafts WhatsApp, Instagram, TikTok, and email replies for the owner to approve. Live sending and card payments stay off.
 
-Governing docs:
+German UI (`de-DE`), `Europe/Berlin`, Monday-first weeks, EUR. Fictional customer data only.
 
-- [`docs/MASTER_ARCHITECTURE.md`](docs/MASTER_ARCHITECTURE.md)
-- [`AGENTS.md`](AGENTS.md)
-- [`docs/feature-specs/SPEC-001-repository-foundation.md`](docs/feature-specs/SPEC-001-repository-foundation.md)
+The practical map of the running product is [`docs/PROJECT_GUIDE.md`](docs/PROJECT_GUIDE.md). Product scope stays in [`docs/MASTER_ARCHITECTURE.md`](docs/MASTER_ARCHITECTURE.md). Contributor rules are in [`AGENTS.md`](AGENTS.md).
 
-## Voraussetzungen
+## Run locally
 
-- Node.js **22 LTS** (oder kompatibel ≥ 20)
-- npm **10+**
-
-## Installation
+Node.js 22 and npm 10+.
 
 ```bash
-git clone <repository-url> salonflow
-cd salonflow
 npm ci
-```
-
-Falls kein Lockfile-Checkout vorliegt:
-
-```bash
-npm install
-```
-
-## Entwicklung
-
-```bash
+npm run db:prepare
 npm run dev
 ```
 
-Öffnen: [http://localhost:3000](http://localhost:3000)  
-Die Startseite leitet auf `/kalender` um.
+If `db:prepare` stays open after printing the database URL, leave that terminal running and start `npm run dev` in another terminal.
 
-### Routen (Deutsch)
+- App: http://localhost:3000
+- Dev login: `owner@salonflow.example` / `salonflow-dev`
+- Database: PostgreSQL on `127.0.0.1:54329`, database `salonflow`
 
-| Pfad | Seite |
-|---|---|
-| `/kalender` | Kalender |
-| `/kunden` | Kunden |
-| `/mitarbeiter` | Mitarbeiter |
-| `/leistungen` | Leistungen |
-| `/einstellungen` | Einstellungen |
-| `/spike/kalender` | M03 Kalender A/B Spike |
-| `/spike/kalender/daypilot` | DayPilot Lite |
-| `/spike/kalender/rbc` | React Big Calendar |
-| `/spike/kalender/native` | Native Dense Baseline |
+Copy [`.env.example`](.env.example) to `.env.local`. Do not commit `.env.local` or `.pgdata`.
 
-## Datenbank (M04+)
-
-Schema: `src/db/schema`. Forward SQL: `src/db/migrations/0000_m04_foundation.sql`.
-
-```bash
-# Requires a local PostgreSQL and DATABASE_URL
-psql "$DATABASE_URL" -f src/db/migrations/0000_m04_foundation.sql
-# Rollback (destructive):
-psql "$DATABASE_URL" -f src/db/migrations/0000_m04_foundation_down.sql
-```
-
-UI milestones do not require Postgres until booking APIs land.
-
-## Qualitätssicherung
+## Checks
 
 ```bash
 npm run lint
 npm run typecheck
 npm run test
+npm run test:integration
 npm run build
-npx playwright install chromium
 npm run test:e2e
 ```
 
-Oder lokal denselben Ablauf wie CI:
+GitHub Actions runs the same sequence on `main` and `feat/**`.
 
-```bash
-npm run ci
-```
+## Branches
 
-Hinweise zu E2E:
-
-- Playwright startet den Production-Server. Lokal wird vorher automatisch gebaut, wenn `CI` nicht gesetzt ist.
-- In GitHub Actions läuft `npm run build` vor den E2E-Tests; der Server startet danach mit `npm run start`.
-
-## Projektstruktur (Auszug)
-
-```text
-src/
-  app/                 # Next.js App Router (deutsche Routen)
-  components/layout/   # App-Shell, Sidebar
-  components/ui/       # shadcn-basierte Primitive
-  features/            # Feature-Module (Kalender, Fixtures, …)
-  domain/              # Reine Domain-Helfer (locale, später Scheduling)
-docs/                  # Architektur und Feature-Specs
-e2e/                   # Playwright Smoke-Tests
-.github/workflows/ci.yml
-```
-
-## Branch-Policy
-
-- Feature-Arbeit auf Branches wie `feat/m01-repo-foundation`
-- Kein Merge nach `main` und kein Production-Deploy ohne Owner-Freigabe
+- `main` is the default branch. Do not push to it directly.
+- Feature work stays on `feat/…` and opens a pull request.
+- Do not merge, and do not deploy to production, without Owner approval.
+- Appointments are written only by `src/server/booking.ts` and the PostgreSQL constraints.
