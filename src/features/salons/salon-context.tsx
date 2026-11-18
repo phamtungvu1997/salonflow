@@ -29,11 +29,12 @@ export function SalonProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let active = true;
-    async function loadSalons() {
+    let retryTimer: number | null = null;
+    async function loadSalons(attempt: number) {
       try {
         let response = await fetch("/api/salons");
         if (response.status === 401 && pathname !== "/anmelden") {
-          await fetch("/api/auth/login", {
+          const login = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "content-type": "application/json" },
             body: JSON.stringify({
@@ -41,9 +42,13 @@ export function SalonProvider({ children }: { children: ReactNode }) {
               password: "salonflow-dev",
             }),
           });
-          response = await fetch("/api/salons");
+          if (login.ok) response = await fetch("/api/salons");
         }
         if (!response.ok) {
+          if (active && attempt < 4) {
+            retryTimer = window.setTimeout(() => void loadSalons(attempt + 1), 1500);
+            return;
+          }
           if (active) setReady(true);
           return;
         }
@@ -57,12 +62,17 @@ export function SalonProvider({ children }: { children: ReactNode }) {
         });
         setReady(true);
       } catch {
+        if (active && attempt < 4) {
+          retryTimer = window.setTimeout(() => void loadSalons(attempt + 1), 1500);
+          return;
+        }
         if (active) setReady(true);
       }
     }
-    void loadSalons();
+    void loadSalons(0);
     return () => {
       active = false;
+      if (retryTimer !== null) window.clearTimeout(retryTimer);
     };
   }, [pathname]);
 

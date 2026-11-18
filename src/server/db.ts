@@ -10,7 +10,7 @@ export function getSql(): postgres.Sql {
     throw new Error("DATABASE_URL fehlt. Lokale Datenbank mit npm run db:prepare starten.");
   }
   if (!globalForSql.salonflowSql) {
-    globalForSql.salonflowSql = postgres(url, { max: 10 });
+    globalForSql.salonflowSql = postgres(url, { max: 10, connect_timeout: 20 });
   }
   return globalForSql.salonflowSql;
 }

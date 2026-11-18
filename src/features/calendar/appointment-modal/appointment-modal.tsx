@@ -57,7 +57,15 @@ export function AppointmentModal({
   const titleId = useId();
   const dialogRef = useRef<HTMLFormElement>(null);
   const onCloseRef = useRef(onClose);
+  const backdropArmed = useRef(false);
   onCloseRef.current = onClose;
+
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      backdropArmed.current = true;
+    }, 350);
+    return () => window.clearTimeout(id);
+  }, []);
 
   const [tab, setTab] = useState<TabId>("appointment");
   const [expanded, setExpanded] = useState(false);
@@ -438,8 +446,10 @@ export function AppointmentModal({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[#1c1e21]/40 p-[10px]"
-      onMouseDown={onClose}
+      className="fixed inset-0 z-[200] flex items-center justify-center bg-[#1c1e21]/40 p-[10px]"
+      onMouseDown={() => {
+        if (backdropArmed.current) onClose();
+      }}
     >
       <form
         ref={dialogRef}

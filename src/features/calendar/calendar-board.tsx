@@ -242,6 +242,7 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeSalon?.id, date, viewMode]);
 
+  const pendingCreateRef = useRef(false);
   const dragBusyRef = useRef(false);
   dragBusyRef.current = Boolean(activeDrag || dragSaving || dragWarning);
   const pendingLiveReloadRef = useRef(false);
@@ -317,11 +318,25 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
     openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setSelected(null);
     setSelectedAbsence(null);
+    setMessage(null);
     if (targetDate && targetDate !== date) {
       changeDate(targetDate);
     }
     setSlot({ staffId, start });
   }
+
+  useEffect(() => {
+    if (!pendingCreateRef.current || !activeSalon) return;
+    const member = staff[0];
+    if (!member) return;
+    pendingCreateRef.current = false;
+    const starts = member.shifts
+      .filter((shift) => shift.isoWeekday === isoWeekdayFromDate(date))
+      .map((shift) => shift.startMinute);
+    openCreate(member.id, minutesLabel(starts.length ? Math.min(...starts) : 9 * 60));
+    // Open a create click that arrived before the staff columns were loaded.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [staff, activeSalon, date]);
 
   function measureDayGridMetrics() {
     const scroller = dayGridScrollRef.current;
@@ -959,9 +974,15 @@ export function CalendarBoard({ initialDate }: { initialDate: string }) {
         {/* Far-right dark navy button: Termin erstellen */}
         <button
           type="button"
+          data-testid="calendar-create-appointment"
           onClick={() => {
             const member = visibleStaff[0] ?? staff[0];
-            if (!member) return;
+            if (!activeSalon || !member) {
+              pendingCreateRef.current = true;
+              setMessage("Kalender wird geladen. Der Dialog öffnet sich gleich.");
+              return;
+            }
+            pendingCreateRef.current = false;
             openCreate(member.id, minutesLabel(openMinutes));
           }}
           className="ml-auto h-9 rounded-lg bg-[#111827] px-4 text-xs font-semibold text-white shadow-sm hover:bg-[#1f2937] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-ring)]"
